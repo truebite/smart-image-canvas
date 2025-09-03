@@ -353,13 +353,22 @@ class SIC_Admin_Settings {
             'SIC_advanced_section',
             array('field' => 'custom_css', 'rows' => '10', 'description' => __('Add custom CSS to override styles', 'smart-image-canvas'))
         );
+        
+        add_settings_field(
+            'github_token',
+            __('GitHub Token', 'smart-image-canvas'),
+            array($this, 'password_field'),
+            'smart-image-canvas',
+            'SIC_advanced_section',
+            array('field' => 'github_token', 'description' => __('GitHub Personal Access Token for automatic updates from private repository', 'smart-image-canvas'))
+        );
     }
     
     /**
      * Settings page
      */
     public function settings_page() {
-        $settings = WP_Auto_Featured_Image::get_settings();
+        $settings = Smart_Image_Canvas::get_settings();
         $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'settings';
         ?>
         <div class="wrap wp-afi-settings">
@@ -517,7 +526,7 @@ class SIC_Admin_Settings {
         }
         
         // Ensure we have default settings merged with user settings for preview
-        $default_settings = WP_Auto_Featured_Image::get_settings();
+        $default_settings = Smart_Image_Canvas::get_settings();
         $preview_settings = wp_parse_args($settings, $default_settings);
         
         // Temporarily override settings for preview
@@ -638,7 +647,7 @@ class SIC_Admin_Settings {
      * Field callbacks
      */
     public function checkbox_field($args) {
-        $settings = WP_Auto_Featured_Image::get_settings();
+        $settings = Smart_Image_Canvas::get_settings();
         $field = $args['field'];
         $value = isset($settings[$field]) ? $settings[$field] : false;
         $description = $args['description'] ?? '';
@@ -656,7 +665,7 @@ class SIC_Admin_Settings {
     }
     
     public function text_field($args) {
-        $settings = WP_Auto_Featured_Image::get_settings();
+        $settings = Smart_Image_Canvas::get_settings();
         $field = $args['field'];
         $value = isset($settings[$field]) ? $settings[$field] : '';
         $placeholder = $args['placeholder'] ?? '';
@@ -675,8 +684,28 @@ class SIC_Admin_Settings {
         }
     }
     
+    public function password_field($args) {
+        $settings = Smart_Image_Canvas::get_settings();
+        $field = $args['field'];
+        $value = isset($settings[$field]) ? $settings[$field] : '';
+        $placeholder = $args['placeholder'] ?? '';
+        $description = $args['description'] ?? '';
+        
+        echo sprintf(
+            '<input type="password" id="SIC_%s" name="SIC_settings[%s]" value="%s" placeholder="%s" class="regular-text wp-afi-field" />',
+            esc_attr($field),
+            esc_attr($field),
+            esc_attr($value),
+            esc_attr($placeholder)
+        );
+        
+        if ($description) {
+            echo '<p class="description">' . esc_html($description) . '</p>';
+        }
+    }
+    
     public function number_field($args) {
-        $settings = WP_Auto_Featured_Image::get_settings();
+        $settings = Smart_Image_Canvas::get_settings();
         $field = $args['field'];
         $value = isset($settings[$field]) ? $settings[$field] : '';
         $min = $args['min'] ?? '';
@@ -695,7 +724,7 @@ class SIC_Admin_Settings {
     }
     
     public function color_field($args) {
-        $settings = WP_Auto_Featured_Image::get_settings();
+        $settings = Smart_Image_Canvas::get_settings();
         $field = $args['field'];
         $value = isset($settings[$field]) ? $settings[$field] : '#2563eb';
         
@@ -708,7 +737,7 @@ class SIC_Admin_Settings {
     }
     
     public function select_field($args) {
-        $settings = WP_Auto_Featured_Image::get_settings();
+        $settings = Smart_Image_Canvas::get_settings();
         $field = $args['field'];
         $value = isset($settings[$field]) ? $settings[$field] : '';
         $options = $args['options'] ?? array();
@@ -728,7 +757,7 @@ class SIC_Admin_Settings {
     }
     
     public function textarea_field($args) {
-        $settings = WP_Auto_Featured_Image::get_settings();
+        $settings = Smart_Image_Canvas::get_settings();
         $field = $args['field'];
         $value = isset($settings[$field]) ? $settings[$field] : '';
         $rows = $args['rows'] ?? '5';
@@ -748,7 +777,7 @@ class SIC_Admin_Settings {
     }
     
     public function category_colors_field($args) {
-        $settings = WP_Auto_Featured_Image::get_settings();
+        $settings = Smart_Image_Canvas::get_settings();
         $category_colors = isset($settings['category_colors']) ? $settings['category_colors'] : array();
         
         // Cache categories for 1 hour
@@ -794,7 +823,7 @@ class SIC_Admin_Settings {
      */
     public function sanitize_settings($input) {
         $sanitized = array();
-        $defaults = WP_Auto_Featured_Image::get_settings();
+        $defaults = Smart_Image_Canvas::get_settings();
         
         // Validate input is array
         if (!is_array($input)) {
@@ -1893,8 +1922,8 @@ class SIC_Admin_Settings {
         
         try {
             // Test 1: Plugin enabled
-            if (class_exists('WP_Auto_Featured_Image')) {
-                $settings = WP_Auto_Featured_Image::get_settings();
+            if (class_exists('Smart_Image_Canvas')) {
+                $settings = Smart_Image_Canvas::get_settings();
                 $tests[] = array(
                     'name' => 'Plugin Status',
                     'status' => $settings['enabled'] ? 'pass' : 'warning',
@@ -1947,8 +1976,8 @@ class SIC_Admin_Settings {
         
         // Test 4: Settings validation
         try {
-            if (class_exists('WP_Auto_Featured_Image')) {
-                $default_settings = WP_Auto_Featured_Image::get_default_settings();
+            if (class_exists('Smart_Image_Canvas')) {
+                $default_settings = Smart_Image_Canvas::get_settings();
                 $tests[] = array(
                     'name' => 'Settings Structure',
                     'status' => is_array($default_settings) && count($default_settings) > 5 ? 'pass' : 'fail',
@@ -3461,7 +3490,7 @@ class SIC_Admin_Settings {
         
         // Test 13: Settings Validation for Preview
         $required_settings = array('enabled', 'template_style', 'background_color', 'text_color');
-        $default_settings = WP_Auto_Featured_Image::get_default_settings();
+        $default_settings = Smart_Image_Canvas::get_settings();
         $settings_count = 0;
         foreach ($required_settings as $setting) {
             if (isset($default_settings[$setting])) {

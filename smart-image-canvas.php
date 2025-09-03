@@ -72,6 +72,7 @@ class Smart_Image_Canvas {
         require_once SIC_PLUGIN_DIR . 'includes/class-customizer.php';
         require_once SIC_PLUGIN_DIR . 'includes/class-theme-compatibility.php';
         require_once SIC_PLUGIN_DIR . 'includes/class-debug.php';
+        require_once SIC_PLUGIN_DIR . 'includes/class-plugin-updater.php';
         
         // Load performance monitor only in debug mode
         if (WP_DEBUG) {
@@ -107,6 +108,9 @@ class Smart_Image_Canvas {
         SIC_Frontend_Display::get_instance();
         SIC_Customizer::get_instance();
         SIC_Theme_Compatibility::get_instance();
+        
+        // Initialize plugin updater
+        new SIC_Plugin_Updater(__FILE__, 'smart-image-canvas', SIC_VERSION);
         
         // Load text domain for translations
         load_plugin_textdomain('smart-image-canvas', false, dirname(SIC_PLUGIN_BASENAME) . '/languages');
@@ -194,7 +198,8 @@ class Smart_Image_Canvas {
             'template_style' => 'modern',
             'enable_category_colors' => false,
             'category_colors' => array(),
-            'custom_css' => ''
+            'custom_css' => '',
+            'github_token' => ''
         );
         
         $settings = get_option('sic_settings', $defaults);
@@ -235,7 +240,8 @@ class Smart_Image_Canvas {
             'template_style' => 'modern',
             'enable_category_colors' => false,
             'category_colors' => array(),
-            'custom_css' => ''
+            'custom_css' => '',
+            'github_token' => ''
         );
         
         add_option('sic_settings', $defaults);
