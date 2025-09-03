@@ -263,3 +263,67 @@ h2 {
 .wp-afi-toggle input:checked + .wp-afi-toggle-slider:before {
     transform: translateX(26px);
 }
+
+/* GitHub Token Field Styling */
+.sic-github-token-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.sic-github-token-wrapper .regular-text {
+    max-width: 400px;
+}
+
+.sic-token-display {
+    background-color: #f9f9f9 !important;
+    color: #666;
+    letter-spacing: 2px;
+    font-family: monospace;
+}
+
+.sic-clear-token {
+    background-color: #d63638 !important;
+    border-color: #d63638 !important;
+    color: white !important;
+    font-size: 12px;
+    height: 30px;
+    line-height: 28px;
+    padding: 0 12px;
+}
+
+.sic-clear-token:hover {
+    background-color: #b32d2e !important;
+    border-color: #b32d2e !important;
+}
+
+.sic-edit-token, .sic-cancel-edit {
+    background-color: #2271b1 !important;
+    border-color: #2271b1 !important;
+    color: white !important;
+    font-size: 12px;
+    height: 30px;
+    line-height: 28px;
+    padding: 0 12px;
+}
+
+.sic-edit-token:hover, .sic-cancel-edit:hover {
+    background-color: #135e96 !important;
+    border-color: #135e96 !important;
+}
+
+.sic-token-edit {
+    margin-top: 5px;
+    border: 2px solid #2271b1;
+    border-radius: 4px;
+}
+
+/* Status indicators */
+.description .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
+    vertical-align: middle;
+}

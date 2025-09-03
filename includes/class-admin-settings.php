@@ -357,7 +357,7 @@ class SIC_Admin_Settings {
         add_settings_field(
             'github_token',
             __('GitHub Token', 'smart-image-canvas'),
-            array($this, 'password_field'),
+            array($this, 'github_token_field'),
             'smart-image-canvas',
             'SIC_advanced_section',
             array('field' => 'github_token', 'description' => __('GitHub Fine-grained Personal Access Token for automatic updates from private repository', 'smart-image-canvas'))
@@ -702,6 +702,102 @@ class SIC_Admin_Settings {
         if ($description) {
             echo '<p class="description">' . esc_html($description) . '</p>';
         }
+    }
+    
+    public function github_token_field($args) {
+        $settings = Smart_Image_Canvas::get_settings();
+        $field = $args['field'];
+        $value = isset($settings[$field]) ? $settings[$field] : '';
+        $placeholder = $args['placeholder'] ?? '';
+        $description = $args['description'] ?? '';
+        $has_token = !empty($value);
+        
+        echo '<div class="sic-github-token-wrapper">';
+        
+        if ($has_token) {
+            // Show placeholder dots to indicate token is set
+            echo sprintf(
+                '<input type="password" id="SIC_%s" name="SIC_settings[%s]" value="%s" placeholder="••••••••••••••••••••••••••••••••••••••••" readonly class="regular-text wp-afi-field sic-token-display" />',
+                esc_attr($field),
+                esc_attr($field),
+                esc_attr($value)
+            );
+            echo '<button type="button" class="button sic-clear-token" data-field="' . esc_attr($field) . '" style="margin-left: 10px;">' . __('Clear Token', 'smart-image-canvas') . '</button>';
+            echo '<button type="button" class="button sic-edit-token" data-field="' . esc_attr($field) . '" style="margin-left: 5px;">' . __('Edit Token', 'smart-image-canvas') . '</button>';
+            
+            // Hidden input for editing
+            echo sprintf(
+                '<input type="password" id="SIC_%s_edit" name="SIC_settings[%s]" value="%s" placeholder="%s" class="regular-text wp-afi-field sic-token-edit" style="display: none;" />',
+                esc_attr($field),
+                esc_attr($field),
+                esc_attr($value),
+                esc_attr($placeholder)
+            );
+        } else {
+            // Show normal input when no token is set
+            echo sprintf(
+                '<input type="password" id="SIC_%s" name="SIC_settings[%s]" value="%s" placeholder="%s" class="regular-text wp-afi-field" />',
+                esc_attr($field),
+                esc_attr($field),
+                esc_attr($value),
+                esc_attr($placeholder ?: __('Enter your GitHub fine-grained token...', 'smart-image-canvas'))
+            );
+        }
+        
+        echo '</div>';
+        
+        if ($description) {
+            echo '<p class="description">' . esc_html($description) . '</p>';
+        }
+        
+        // Add status indicator
+        if ($has_token) {
+            echo '<p class="description" style="color: #008000; font-weight: 500;"><span class="dashicons dashicons-yes-alt"></span> ' . __('GitHub token is configured', 'smart-image-canvas') . '</p>';
+        } else {
+            echo '<p class="description" style="color: #d63638; font-weight: 500;"><span class="dashicons dashicons-warning"></span> ' . __('No GitHub token set - automatic updates disabled', 'smart-image-canvas') . '</p>';
+        }
+        
+        // Add JavaScript for token management
+        ?>
+        <script>
+        jQuery(document).ready(function($) {
+            // Handle clear token button
+            $('.sic-clear-token').on('click', function() {
+                var field = $(this).data('field');
+                var confirmed = confirm('<?php echo esc_js(__('Are you sure you want to clear the GitHub token? This will disable automatic updates.', 'smart-image-canvas')); ?>');
+                
+                if (confirmed) {
+                    // Clear the token
+                    $('#SIC_' + field).val('');
+                    $('#SIC_' + field + '_edit').val('');
+                    
+                    // Switch to normal input mode
+                    $('.sic-github-token-wrapper').html(
+                        '<input type="password" id="SIC_' + field + '" name="SIC_settings[' + field + ']" value="" placeholder="<?php echo esc_js(__('Enter your GitHub fine-grained token...', 'smart-image-canvas')); ?>" class="regular-text wp-afi-field" />'
+                    );
+                    
+                    // Show warning message
+                    $('.sic-github-token-wrapper').after('<p class="description" style="color: #d63638; font-weight: 500;"><span class="dashicons dashicons-warning"></span> <?php echo esc_js(__('Token cleared - remember to save settings', 'smart-image-canvas')); ?></p>');
+                }
+            });
+            
+            // Handle edit token button
+            $('.sic-edit-token').on('click', function() {
+                var field = $(this).data('field');
+                $('.sic-token-display').hide();
+                $('.sic-token-edit').show().focus();
+                $(this).text('<?php echo esc_js(__('Cancel Edit', 'smart-image-canvas')); ?>').removeClass('sic-edit-token').addClass('sic-cancel-edit');
+            });
+            
+            // Handle cancel edit
+            $(document).on('click', '.sic-cancel-edit', function() {
+                $('.sic-token-display').show();
+                $('.sic-token-edit').hide();
+                $(this).text('<?php echo esc_js(__('Edit Token', 'smart-image-canvas')); ?>').removeClass('sic-cancel-edit').addClass('sic-edit-token');
+            });
+        });
+        </script>
+        <?php
     }
     
     public function number_field($args) {
