@@ -1,0 +1,96 @@
+/* Auto Featured Image - Frontend Styles */
+
+/* Base styles are generated dynamically by the plugin */
+
+/* Loading animation for generated images */
+.wp-afi-generated-image {
+    animation: wp-afi-fade-in 0.6s ease-out forwards;
+}
+
+@keyframes wp-afi-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Ensure images work well in different contexts */
+.widget .wp-afi-generated-image,
+.wp-block-latest-posts .wp-afi-generated-image {
+    margin-bottom: 1rem;
+}
+
+/* Grid layouts */
+.wp-block-latest-posts.is-grid .wp-afi-generated-image,
+.wp-block-query.is-layout-grid .wp-afi-generated-image {
+    width: 100%;
+    height: auto;
+}
+
+/* Archive pages */
+.archive .wp-afi-generated-image,
+.blog .wp-afi-generated-image,
+.search-results .wp-afi-generated-image {
+    margin-bottom: 1.5rem;
+}
+
+/* Single post pages */
+.single .wp-afi-generated-image {
+    margin-bottom: 2rem;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .wp-afi-generated-image {
+        border: 2px solid currentColor;
+    }
+    
+    .wp-afi-title {
+        text-shadow: none !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .wp-afi-generated-image {
+        animation: none;
+        transition: none;
+    }
+    
+    .wp-afi-generated-image:hover {
+        transform: none;
+    }
+    
+    .wp-afi-title {
+        transform: none !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    .wp-afi-generated-image {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .wp-afi-title {
+        color: #000 !important;
+        text-shadow: none !important;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .wp-afi-generated-image {
+        box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.1), 0 2px 4px -1px rgba(255, 255, 255, 0.06);
+    }
+    
+    .wp-afi-generated-image:hover {
+        box-shadow: 0 10px 15px -3px rgba(255, 255, 255, 0.1), 0 4px 6px -2px rgba(255, 255, 255, 0.05);
+    }
+}

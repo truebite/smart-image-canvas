@@ -1,0 +1,64 @@
+# WordPress
+wp-config.php
+wp-content/uploads/
+wp-content/cache/
+wp-content/backup-db/
+wp-content/advanced-cache.php
+wp-content/wp-cache-config.php
+wp-content/blogs.dir/
+wp-content/upgrade/
+wp-content/backup-db/
+wp-content/mu-plugins/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Node modules and build files
+node_modules/
+npm-debug.log
+yarn-error.log
+.sass-cache/
+
+# Composer
+vendor/
+composer.lock
+
+# Log files
+*.log
+error_log
+debug.log
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Plugin specific
+*.zip
+cleanup-plugin-refs.php
+
+# Development files (optional - remove if you want to include them)
+validate-refactoring.php
+BUGFIX-STATIC-METHODS.md
+IMPLEMENTATION-SUMMARY.md
+PERFORMANCE.md
+REFACTORING-COMPLETE.md
+REFACTORING-FINAL-REPORT.md
+REFACTORING_SUMMARY.md
+SECURITY-CHECKLIST.md
+includes/class-image-generator-old.php
+includes/class-image-generator-refactored.php

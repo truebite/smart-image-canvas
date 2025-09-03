@@ -1,0 +1,183 @@
+/* Auto Featured Image - Customizer Controls Styles */
+
+/* Panel and Section Headers */
+.wp-full-overlay-sidebar #accordion-panel-wp_afi_panel .accordion-section-title {
+    background: #f7f7f7;
+    color: #0073aa;
+    font-weight: 600;
+}
+
+.wp-full-overlay-sidebar #accordion-panel-wp_afi_panel .accordion-section-title:hover,
+.wp-full-overlay-sidebar #accordion-panel-wp_afi_panel .accordion-section-title:focus {
+    background: #0073aa;
+    color: #fff;
+}
+
+/* Control Spacing */
+.customize-control-wp_afi_template_style,
+.customize-control-wp_afi_aspect_ratio,
+.customize-control-wp_afi_font_family {
+    margin-bottom: 1.5rem;
+}
+
+/* Color Controls */
+.customize-control-color .color-picker-hex {
+    border-radius: 3px;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.customize-control-color .color-picker-hex:focus {
+    border-color: #007cba;
+    box-shadow: 0 0 0 1px #007cba;
+}
+
+/* Range Controls */
+.customize-control input[type="range"] {
+    width: 100%;
+    margin: 10px 0;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: #ddd;
+    border-radius: 3px;
+    outline: none;
+}
+
+.customize-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #0073aa;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s ease-in-out;
+}
+
+.customize-control input[type="range"]::-webkit-slider-thumb:hover {
+    background: #005a87;
+}
+
+.customize-control input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: #0073aa;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s ease-in-out;
+}
+
+.customize-control input[type="range"]::-moz-range-thumb:hover {
+    background: #005a87;
+}
+
+/* Radio Controls */
+.customize-control-radio input[type="radio"] {
+    margin-right: 8px;
+}
+
+.customize-control-radio label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: normal;
+    cursor: pointer;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    transition: all 0.15s ease-in-out;
+}
+
+.customize-control-radio label:hover {
+    background: #f7f7f7;
+    border-color: #ddd;
+}
+
+.customize-control-radio input[type="radio"]:checked + label {
+    background: #e6f7ff;
+    border-color: #007cba;
+    color: #0073aa;
+    font-weight: 500;
+}
+
+/* Textarea Controls */
+.customize-control textarea {
+    width: 100%;
+    min-height: 80px;
+    resize: vertical;
+    border-radius: 3px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Control Descriptions */
+.customize-control .description {
+    color: #666;
+    font-style: italic;
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Loading States */
+.customize-control.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.customize-control.loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    margin-top: -8px;
+    border: 2px solid #ddd;
+    border-top-color: #0073aa;
+    border-radius: 50%;
+    animation: customizer-spin 1s linear infinite;
+}
+
+@keyframes customizer-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Preview Notices */
+.wp-afi-preview-notice {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 8px 12px;
+    border-radius: 3px;
+    margin-bottom: 12px;
+    font-size: 12px;
+}
+
+/* Enhanced Control Groups */
+.wp-afi-control-group {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.wp-afi-control-group .customize-control {
+    margin-bottom: 12px;
+}
+
+.wp-afi-control-group .customize-control:last-child {
+    margin-bottom: 0;
+}
+
+.wp-afi-control-group-title {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ddd;
+}

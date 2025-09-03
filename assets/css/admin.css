@@ -1,0 +1,265 @@
+/* Auto Featured Image - Admin Styles */
+
+.wp-afi-settings {
+    max-width: 1200px;
+}
+
+.wp-afi-settings-container {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.wp-afi-settings-main {
+    flex: 2;
+}
+
+.wp-afi-settings-sidebar {
+    flex: 1;
+    max-width: 400px;
+}
+
+/* Preview Panel */
+.wp-afi-preview-panel {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.wp-afi-preview-panel h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #23282d;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#wp-afi-preview-container {
+    margin-bottom: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+    max-width: 300px;
+}
+
+#wp-afi-refresh-preview {
+    width: 100%;
+}
+
+/* Help Panel */
+.wp-afi-help-panel {
+    background: #f7f7f7;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 1.5rem;
+}
+
+.wp-afi-help-panel h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #23282d;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.wp-afi-help-panel ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.wp-afi-help-panel li {
+    margin-bottom: 0.5rem;
+    color: #555;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* Form Fields */
+.wp-afi-field {
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.wp-afi-field:focus {
+    border-color: #007cba;
+    box-shadow: 0 0 0 1px #007cba;
+    outline: none;
+}
+
+/* Color Picker */
+.wp-afi-color-picker {
+    max-width: 100px;
+}
+
+/* Category Colors */
+.wp-afi-category-colors {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.wp-afi-category-color-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: #f9f9f9;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.wp-afi-category-color-row label {
+    font-weight: 500;
+    min-width: 120px;
+}
+
+.wp-afi-category-color-row input[type="text"] {
+    max-width: 100px;
+}
+
+/* Settings Form */
+.form-table th {
+    font-weight: 600;
+    color: #23282d;
+}
+
+.form-table td {
+    vertical-align: top;
+    padding-top: 15px;
+}
+
+.form-table .description {
+    color: #666;
+    font-style: italic;
+    margin-top: 5px;
+}
+
+/* Section Headers */
+h2 {
+    border-bottom: 1px solid #ccd0d4;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    color: #23282d;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .wp-afi-settings-container {
+        flex-direction: column;
+    }
+    
+    .wp-afi-settings-sidebar {
+        max-width: none;
+    }
+    
+    .wp-afi-category-colors {
+        grid-template-columns: 1fr;
+    }
+    
+    .wp-afi-category-color-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .wp-afi-category-color-row label {
+        min-width: auto;
+    }
+}
+
+/* Loading State */
+.wp-afi-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.wp-afi-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #ccc;
+    border-top-color: #007cba;
+    border-radius: 50%;
+    animation: wp-afi-spin 1s linear infinite;
+}
+
+@keyframes wp-afi-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Success/Error Messages */
+.wp-afi-message {
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.wp-afi-message.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.wp-afi-message.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+/* Toggle Switch */
+.wp-afi-toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.wp-afi-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.wp-afi-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 24px;
+}
+
+.wp-afi-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+.wp-afi-toggle input:checked + .wp-afi-toggle-slider {
+    background-color: #007cba;
+}
+
+.wp-afi-toggle input:checked + .wp-afi-toggle-slider:before {
+    transform: translateX(26px);
+}
