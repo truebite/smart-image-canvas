@@ -360,7 +360,7 @@ class SIC_Admin_Settings {
             array($this, 'password_field'),
             'smart-image-canvas',
             'SIC_advanced_section',
-            array('field' => 'github_token', 'description' => __('GitHub Personal Access Token for automatic updates from private repository', 'smart-image-canvas'))
+            array('field' => 'github_token', 'description' => __('GitHub Fine-grained Personal Access Token for automatic updates from private repository', 'smart-image-canvas'))
         );
     }
     

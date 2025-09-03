@@ -80,8 +80,9 @@ class SIC_Plugin_Updater {
     private function get_remote_version() {
         $request = wp_remote_get($this->get_api_url('releases/latest'), array(
             'headers' => array(
-                'Authorization' => 'token ' . $this->github_token,
-                'User-Agent' => 'WordPress-Plugin-Updater'
+                'Authorization' => 'Bearer ' . $this->github_token,
+                'User-Agent' => 'WordPress-Plugin-Updater',
+                'X-GitHub-Api-Version' => '2022-11-28'
             )
         ));
         
@@ -107,8 +108,9 @@ class SIC_Plugin_Updater {
         
         $request = wp_remote_get($this->get_api_url('releases/latest'), array(
             'headers' => array(
-                'Authorization' => 'token ' . $this->github_token,
-                'User-Agent' => 'WordPress-Plugin-Updater'
+                'Authorization' => 'Bearer ' . $this->github_token,
+                'User-Agent' => 'WordPress-Plugin-Updater',
+                'X-GitHub-Api-Version' => '2022-11-28'
             )
         ));
         
@@ -140,8 +142,9 @@ class SIC_Plugin_Updater {
         if (strpos($package, 'github.com') !== false && strpos($package, $this->repository) !== false) {
             $args = array(
                 'headers' => array(
-                    'Authorization' => 'token ' . $this->github_token,
-                    'Accept' => 'application/vnd.github.v3+json'
+                    'Authorization' => 'Bearer ' . $this->github_token,
+                    'Accept' => 'application/vnd.github.v3+json',
+                    'X-GitHub-Api-Version' => '2022-11-28'
                 )
             );
             
