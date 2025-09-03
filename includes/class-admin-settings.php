@@ -362,6 +362,15 @@ class SIC_Admin_Settings {
             'SIC_advanced_section',
             array('field' => 'github_token', 'description' => __('GitHub Fine-grained Personal Access Token for automatic updates from private repository', 'smart-image-canvas'))
         );
+        
+        add_settings_field(
+            'debug_enabled',
+            __('Debug Logging', 'smart-image-canvas'),
+            array($this, 'checkbox_field'),
+            'smart-image-canvas',
+            'SIC_advanced_section',
+            array('field' => 'debug_enabled', 'description' => __('Enable debug logging for troubleshooting (temporary - disable after issues are resolved)', 'smart-image-canvas'))
+        );
     }
     
     /**
@@ -380,6 +389,9 @@ class SIC_Admin_Settings {
                 </a>
                 <a href="?page=wp-auto-featured-image&tab=debug" class="nav-tab <?php echo $active_tab === 'debug' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Debug & Troubleshooting', 'smart-image-canvas'); ?>
+                </a>
+                <a href="?page=wp-auto-featured-image&tab=logs" class="nav-tab <?php echo $active_tab === 'logs' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Debug Logs', 'smart-image-canvas'); ?>
                 </a>
             </nav>
             
@@ -472,6 +484,8 @@ class SIC_Admin_Settings {
                 </script>
             <?php elseif ($active_tab === 'debug' || $active_tab === 'self-test'): ?>
                 <?php $this->render_debug_tab(); ?>
+            <?php elseif ($active_tab === 'logs'): ?>
+                <?php $this->render_logs_tab(); ?>
             <?php endif; ?>
         </div>
         <?php
@@ -931,19 +945,24 @@ class SIC_Admin_Settings {
      * Sanitize settings with enhanced validation
      */
     public function sanitize_settings($input) {
+        $logger = SIC_Debug_Logger::get_instance();
+        $logger->info('Settings sanitization started', array('input_keys' => array_keys($input)));
+        
         $sanitized = array();
         $defaults = Smart_Image_Canvas::get_settings();
         
         // Validate input is array
         if (!is_array($input)) {
+            $logger->error('Invalid settings input - not an array', array('input_type' => gettype($input)));
             add_settings_error('SIC_settings', 'invalid_input', __('Invalid settings data received.', 'smart-image-canvas'));
             return $defaults;
         }
         
         // Boolean fields
-        $boolean_fields = array('enabled', 'auto_activate', 'enable_category_colors');
+        $boolean_fields = array('enabled', 'auto_activate', 'enable_category_colors', 'debug_enabled');
         foreach ($boolean_fields as $field) {
             $sanitized[$field] = !empty($input[$field]);
+            $logger->debug("Boolean field {$field}", array('value' => $sanitized[$field]));
         }
         
         // Text fields with length limits
@@ -1035,6 +1054,17 @@ class SIC_Admin_Settings {
         } else {
             $sanitized['category_colors'] = array();
         }
+        
+        // GitHub token field
+        $github_token = isset($input['github_token']) ? sanitize_text_field($input['github_token']) : '';
+        $sanitized['github_token'] = $github_token;
+        $logger->info('GitHub token processed', array(
+            'has_token' => !empty($github_token),
+            'token_length' => strlen($github_token),
+            'input_has_token' => isset($input['github_token'])
+        ));
+        
+        $logger->info('Settings sanitization completed', array('sanitized_keys' => array_keys($sanitized)));
         
         return $sanitized;
     }
@@ -1467,6 +1497,154 @@ class SIC_Admin_Settings {
         });
         </script>
         <?php
+    }
+
+    /**
+     * Render the logs tab
+     */
+    private function render_logs_tab() {
+        $logger = SIC_Debug_Logger::instance();
+        $logs = $logger->get_logs();
+        
+        // Handle log actions
+        if (isset($_POST['clear_logs']) && wp_verify_nonce($_POST['_wpnonce'], 'sic_clear_logs')) {
+            $logger->clear_logs();
+            echo '<div class="notice notice-success"><p>' . __('Logs cleared successfully.', 'smart-image-canvas') . '</p></div>';
+            $logs = []; // Clear the display
+        }
+        
+        if (isset($_POST['export_logs']) && wp_verify_nonce($_POST['_wpnonce'], 'sic_export_logs')) {
+            $this->export_logs();
+            return;
+        }
+        ?>
+        
+        <div class="wrap">
+            <h2><?php _e('Debug Logs', 'smart-image-canvas'); ?></h2>
+            
+            <div style="margin-bottom: 20px;">
+                <form method="post" style="display: inline-block; margin-right: 10px;">
+                    <?php wp_nonce_field('sic_clear_logs'); ?>
+                    <input type="submit" name="clear_logs" class="button button-secondary" 
+                           value="<?php _e('Clear All Logs', 'smart-image-canvas'); ?>"
+                           onclick="return confirm('<?php _e('Are you sure you want to clear all logs?', 'smart-image-canvas'); ?>');">
+                </form>
+                
+                <form method="post" style="display: inline-block;">
+                    <?php wp_nonce_field('sic_export_logs'); ?>
+                    <input type="submit" name="export_logs" class="button button-secondary" 
+                           value="<?php _e('Export Logs', 'smart-image-canvas'); ?>">
+                </form>
+                
+                <button type="button" class="button button-primary" onclick="location.reload();">
+                    <?php _e('Refresh Logs', 'smart-image-canvas'); ?>
+                </button>
+            </div>
+            
+            <?php if (empty($logs)): ?>
+                <div class="notice notice-info">
+                    <p><?php _e('No logs available.', 'smart-image-canvas'); ?></p>
+                </div>
+            <?php else: ?>
+                <div style="background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; max-height: 600px; overflow-y: auto; padding: 15px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4;">
+                    <?php foreach (array_reverse($logs) as $log): ?>
+                        <?php
+                        $level_class = '';
+                        switch ($log['level']) {
+                            case 'ERROR':
+                                $level_class = 'color: #d63638; font-weight: bold;';
+                                break;
+                            case 'WARNING':
+                                $level_class = 'color: #dba617; font-weight: bold;';
+                                break;
+                            case 'INFO':
+                                $level_class = 'color: #135e96;';
+                                break;
+                            case 'DEBUG':
+                                $level_class = 'color: #757575;';
+                                break;
+                        }
+                        ?>
+                        <div style="margin-bottom: 8px; padding: 5px; border-left: 3px solid #ddd;">
+                            <div style="<?php echo $level_class; ?>">
+                                <strong>[<?php echo esc_html($log['timestamp']); ?>] <?php echo esc_html($log['level']); ?>:</strong>
+                                <?php echo esc_html($log['message']); ?>
+                            </div>
+                            <?php if (!empty($log['context'])): ?>
+                                <div style="color: #666; font-size: 11px; margin-top: 3px;">
+                                    <strong>Context:</strong> <?php echo esc_html(json_encode($log['context'], JSON_PRETTY_PRINT)); ?>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($log['backtrace'])): ?>
+                                <details style="margin-top: 5px;">
+                                    <summary style="cursor: pointer; color: #666; font-size: 11px;">Show Backtrace</summary>
+                                    <pre style="background: #f6f7f7; padding: 8px; margin: 5px 0; font-size: 10px; overflow-x: auto;"><?php echo esc_html($log['backtrace']); ?></pre>
+                                </details>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #f0f0f1; border-radius: 4px;">
+                <h3><?php _e('Log Information', 'smart-image-canvas'); ?></h3>
+                <ul>
+                    <li><strong><?php _e('Total logs:', 'smart-image-canvas'); ?></strong> <?php echo count($logs); ?></li>
+                    <li><strong><?php _e('Log levels:', 'smart-image-canvas'); ?></strong> ERROR, WARNING, INFO, DEBUG</li>
+                    <li><strong><?php _e('Auto-rotation:', 'smart-image-canvas'); ?></strong> <?php _e('Logs are automatically rotated when they exceed 1000 entries', 'smart-image-canvas'); ?></li>
+                </ul>
+            </div>
+        </div>
+        
+        <script>
+        // Auto-refresh logs every 30 seconds if debug is enabled
+        <?php if (!empty($this->get_settings()['debug_enabled'])): ?>
+        setInterval(function() {
+            // Only refresh if we're still on the logs tab
+            if (window.location.href.includes('tab=logs')) {
+                location.reload();
+            }
+        }, 30000);
+        <?php endif; ?>
+        </script>
+        <?php
+    }
+
+    /**
+     * Export logs to a downloadable file
+     */
+    private function export_logs() {
+        $logger = SIC_Debug_Logger::instance();
+        $logs = $logger->get_logs();
+        
+        $content = "Smart Image Canvas - Debug Logs Export\n";
+        $content .= "Generated: " . current_time('Y-m-d H:i:s') . "\n";
+        $content .= "Site: " . home_url() . "\n";
+        $content .= "Plugin Version: " . SIC_VERSION . "\n";
+        $content .= str_repeat("=", 50) . "\n\n";
+        
+        foreach (array_reverse($logs) as $log) {
+            $content .= "[{$log['timestamp']}] {$log['level']}: {$log['message']}\n";
+            if (!empty($log['context'])) {
+                $content .= "Context: " . json_encode($log['context']) . "\n";
+            }
+            if (!empty($log['backtrace'])) {
+                $content .= "Backtrace:\n{$log['backtrace']}\n";
+            }
+            $content .= str_repeat("-", 30) . "\n";
+        }
+        
+        $filename = 'smart-image-canvas-logs-' . date('Y-m-d-H-i-s') . '.txt';
+        
+        header('Content-Type: text/plain');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . strlen($content));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        echo $content;
+        exit;
     }
 
     /**

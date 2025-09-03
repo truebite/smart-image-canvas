@@ -21,6 +21,11 @@ class SIC_Plugin_Updater {
     private $github_token = ''; // Will be set via settings
     
     /**
+     * Debug logger instance
+     */
+    private $logger;
+    
+    /**
      * Plugin information
      */
     private $plugin_slug;
@@ -37,14 +42,29 @@ class SIC_Plugin_Updater {
         $this->version = $version;
         $this->plugin_path = plugin_basename($plugin_file);
         
+        // Initialize debug logger
+        $this->logger = SIC_Debug_Logger::instance();
+        
         // Get GitHub token from settings
         $settings = get_option('sic_settings', array());
         $this->github_token = isset($settings['github_token']) ? $settings['github_token'] : '';
+        
+        // Log updater initialization
+        $this->logger->info('Plugin updater initialized', [
+            'plugin_slug' => $this->plugin_slug,
+            'version' => $this->version,
+            'has_token' => !empty($this->github_token),
+            'token_length' => strlen($this->github_token)
+        ]);
         
         if (!empty($this->github_token)) {
             add_filter('pre_set_site_transient_update_plugins', array($this, 'check_for_update'));
             add_filter('plugins_api', array($this, 'plugin_info'), 20, 3);
             add_filter('upgrader_pre_download', array($this, 'download_package'), 10, 3);
+            
+            $this->logger->info('Auto-update hooks registered successfully');
+        } else {
+            $this->logger->warning('GitHub token not found - automatic updates disabled');
         }
     }
     
@@ -78,6 +98,8 @@ class SIC_Plugin_Updater {
      * Get remote version from GitHub releases
      */
     private function get_remote_version() {
+        $this->logger->info('Checking for remote version from GitHub releases');
+        
         $request = wp_remote_get($this->get_api_url('releases/latest'), array(
             'headers' => array(
                 'Authorization' => 'Bearer ' . $this->github_token,
@@ -86,13 +108,40 @@ class SIC_Plugin_Updater {
             )
         ));
         
-        if (!is_wp_error($request) && wp_remote_retrieve_response_code($request) === 200) {
+        if (is_wp_error($request)) {
+            $this->logger->error('GitHub API request failed', [
+                'error' => $request->get_error_message(),
+                'url' => $this->get_api_url('releases/latest')
+            ]);
+            return false;
+        }
+        
+        $response_code = wp_remote_retrieve_response_code($request);
+        $this->logger->info('GitHub API response received', [
+            'response_code' => $response_code,
+            'url' => $this->get_api_url('releases/latest')
+        ]);
+        
+        if ($response_code === 200) {
             $body = wp_remote_retrieve_body($request);
             $data = json_decode($body, true);
             
             if (isset($data['tag_name'])) {
-                return ltrim($data['tag_name'], 'v'); // Remove 'v' prefix if present
+                $remote_version = ltrim($data['tag_name'], 'v');
+                $this->logger->info('Remote version found', [
+                    'remote_version' => $remote_version,
+                    'current_version' => $this->version,
+                    'update_available' => version_compare($this->version, $remote_version, '<')
+                ]);
+                return $remote_version;
+            } else {
+                $this->logger->warning('No tag_name found in GitHub response', ['response_data' => $data]);
             }
+        } else {
+            $this->logger->error('GitHub API returned error response', [
+                'response_code' => $response_code,
+                'response_body' => wp_remote_retrieve_body($request)
+            ]);
         }
         
         return false;

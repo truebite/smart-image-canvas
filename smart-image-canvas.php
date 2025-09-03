@@ -3,7 +3,7 @@
  * Plugin Name: Smart Image Canvas
  * Plugin URI: https://github.com/truebite/smart-image-canvas
  * Description: Automatically generate beautiful CSS-based featured images when no featured image is set. Features live preview, customizable styles, and responsive design.
- * Version: 1.0.2
+ * Version: 1.0.4
  * Author: Your Name
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('SIC_VERSION', '1.0.2');
+define('SIC_VERSION', '1.0.4');
 define('SIC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SIC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SIC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -73,6 +73,7 @@ class Smart_Image_Canvas {
         require_once SIC_PLUGIN_DIR . 'includes/class-theme-compatibility.php';
         require_once SIC_PLUGIN_DIR . 'includes/class-debug.php';
         require_once SIC_PLUGIN_DIR . 'includes/class-plugin-updater.php';
+        require_once SIC_PLUGIN_DIR . 'includes/class-debug-logger.php';
         
         // Load performance monitor only in debug mode
         if (WP_DEBUG) {
@@ -199,7 +200,8 @@ class Smart_Image_Canvas {
             'enable_category_colors' => false,
             'category_colors' => array(),
             'custom_css' => '',
-            'github_token' => ''
+            'github_token' => '',
+            'debug_enabled' => false
         );
         
         $settings = get_option('sic_settings', $defaults);
@@ -241,7 +243,8 @@ class Smart_Image_Canvas {
             'enable_category_colors' => false,
             'category_colors' => array(),
             'custom_css' => '',
-            'github_token' => ''
+            'github_token' => '',
+            'debug_enabled' => false
         );
         
         add_option('sic_settings', $defaults);
