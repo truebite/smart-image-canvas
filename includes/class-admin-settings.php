@@ -717,21 +717,26 @@ class SIC_Admin_Settings {
         if ($has_token) {
             // Show placeholder dots to indicate token is set
             echo sprintf(
-                '<input type="password" id="SIC_%s" name="SIC_settings[%s]" value="%s" placeholder="••••••••••••••••••••••••••••••••••••••••" readonly class="regular-text wp-afi-field sic-token-display" />',
-                esc_attr($field),
-                esc_attr($field),
-                esc_attr($value)
+                '<input type="text" id="SIC_%s_display" value="••••••••••••••••••••••••••••••••••••••••" readonly class="regular-text wp-afi-field sic-token-display" />',
+                esc_attr($field)
             );
             echo '<button type="button" class="button sic-clear-token" data-field="' . esc_attr($field) . '" style="margin-left: 10px;">' . __('Clear Token', 'smart-image-canvas') . '</button>';
             echo '<button type="button" class="button sic-edit-token" data-field="' . esc_attr($field) . '" style="margin-left: 5px;">' . __('Edit Token', 'smart-image-canvas') . '</button>';
             
-            // Hidden input for editing
+            // Hidden input with actual value for saving (always present)
             echo sprintf(
-                '<input type="password" id="SIC_%s_edit" name="SIC_settings[%s]" value="%s" placeholder="%s" class="regular-text wp-afi-field sic-token-edit" style="display: none;" />',
+                '<input type="hidden" id="SIC_%s" name="SIC_settings[%s]" value="%s" class="sic-token-hidden" />',
                 esc_attr($field),
+                esc_attr($field),
+                esc_attr($value)
+            );
+            
+            // Hidden input for editing (only shown when editing)
+            echo sprintf(
+                '<input type="password" id="SIC_%s_edit" value="%s" placeholder="%s" class="regular-text wp-afi-field sic-token-edit" style="display: none; margin-top: 10px;" />',
                 esc_attr($field),
                 esc_attr($value),
-                esc_attr($placeholder)
+                esc_attr($placeholder ?: __('Enter your GitHub fine-grained token...', 'smart-image-canvas'))
             );
         } else {
             // Show normal input when no token is set
@@ -767,33 +772,41 @@ class SIC_Admin_Settings {
                 var confirmed = confirm('<?php echo esc_js(__('Are you sure you want to clear the GitHub token? This will disable automatic updates.', 'smart-image-canvas')); ?>');
                 
                 if (confirmed) {
-                    // Clear the token
-                    $('#SIC_' + field).val('');
-                    $('#SIC_' + field + '_edit').val('');
+                    // Clear the hidden token value
+                    $('.sic-token-hidden').val('');
                     
-                    // Switch to normal input mode
+                    // Replace the interface with normal input
                     $('.sic-github-token-wrapper').html(
                         '<input type="password" id="SIC_' + field + '" name="SIC_settings[' + field + ']" value="" placeholder="<?php echo esc_js(__('Enter your GitHub fine-grained token...', 'smart-image-canvas')); ?>" class="regular-text wp-afi-field" />'
                     );
                     
-                    // Show warning message
-                    $('.sic-github-token-wrapper').after('<p class="description" style="color: #d63638; font-weight: 500;"><span class="dashicons dashicons-warning"></span> <?php echo esc_js(__('Token cleared - remember to save settings', 'smart-image-canvas')); ?></p>');
+                    // Update status message
+                    $('.sic-github-token-wrapper').next('.description').next('.description').html('<span class="dashicons dashicons-warning"></span> <?php echo esc_js(__('Token cleared - remember to save settings', 'smart-image-canvas')); ?>').css('color', '#d63638');
                 }
             });
             
             // Handle edit token button
             $('.sic-edit-token').on('click', function() {
                 var field = $(this).data('field');
-                $('.sic-token-display').hide();
-                $('.sic-token-edit').show().focus();
-                $(this).text('<?php echo esc_js(__('Cancel Edit', 'smart-image-canvas')); ?>').removeClass('sic-edit-token').addClass('sic-cancel-edit');
+                var isEditing = $(this).hasClass('sic-cancel-edit');
+                
+                if (isEditing) {
+                    // Cancel editing
+                    $('.sic-token-display').show();
+                    $('.sic-token-edit').hide();
+                    $(this).text('<?php echo esc_js(__('Edit Token', 'smart-image-canvas')); ?>').removeClass('sic-cancel-edit').addClass('sic-edit-token');
+                } else {
+                    // Start editing
+                    $('.sic-token-display').hide();
+                    $('.sic-token-edit').show().focus();
+                    $(this).text('<?php echo esc_js(__('Cancel Edit', 'smart-image-canvas')); ?>').removeClass('sic-edit-token').addClass('sic-cancel-edit');
+                }
             });
             
-            // Handle cancel edit
-            $(document).on('click', '.sic-cancel-edit', function() {
-                $('.sic-token-display').show();
-                $('.sic-token-edit').hide();
-                $(this).text('<?php echo esc_js(__('Edit Token', 'smart-image-canvas')); ?>').removeClass('sic-cancel-edit').addClass('sic-edit-token');
+            // Update hidden field when editing
+            $('.sic-token-edit').on('input', function() {
+                var newValue = $(this).val();
+                $('.sic-token-hidden').val(newValue);
             });
         });
         </script>
