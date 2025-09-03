@@ -33,7 +33,7 @@
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/your-username/smart-image-canvas.git
+   git clone https://github.com/truebite/smart-image-canvas.git
    ```
 
 2. Upload the `smart-image-canvas` folder to your `/wp-content/plugins/` directory
@@ -44,7 +44,7 @@
 
 ### Manual Installation
 
-1. Download the latest release from the [Releases page](https://github.com/your-username/smart-image-canvas/releases)
+1. Download the latest release from the [Releases page](https://github.com/truebite/smart-image-canvas/releases)
 2. Upload the plugin files to `/wp-content/plugins/smart-image-canvas/`
 3. Activate the plugin through the WordPress admin
 
@@ -151,9 +151,9 @@ This project is licensed under the GPL v2 or later - see the [LICENSE](LICENSE) 
 
 ## 📞 Support
 
-- **GitHub Issues**: [Report bugs or request features](https://github.com/your-username/smart-image-canvas/issues)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/truebite/smart-image-canvas/issues)
 - **WordPress Forums**: [Plugin support forum](https://wordpress.org/support/plugin/smart-image-canvas/)
-- **Documentation**: [Full documentation](https://github.com/your-username/smart-image-canvas/wiki)
+- **Documentation**: [Full documentation](https://github.com/truebite/smart-image-canvas/wiki)
 
 ---
 

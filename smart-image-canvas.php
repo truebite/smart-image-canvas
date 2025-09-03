@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Smart Image Canvas
- * Plugin URI: https://github.com/your-username/smart-image-canvas
+ * Plugin URI: https://github.com/truebite/smart-image-canvas
  * Description: Automatically generate beautiful CSS-based featured images when no featured image is set. Features live preview, customizable styles, and responsive design.
  * Version: 1.0.0
  * Author: Your Name
