@@ -4728,6 +4728,30 @@ class SIC_Admin_Settings {
                         <a href="?page=smart-image-canvas&tab=settings"><?php _e('Configure GitHub token in Settings', 'smart-image-canvas'); ?></a>
                     </p>
                 </div>
+            <?php else: ?>
+                <div class="wp-afi-token-status">
+                    <h3><?php _e('GitHub Token Status', 'smart-image-canvas'); ?></h3>
+                    <div class="wp-afi-token-info">
+                        <?php
+                        $token = $settings['github_token'];
+                        $token_length = strlen($token);
+                        $token_prefix = substr($token, 0, 10) . '...';
+                        
+                        // Check token format
+                        $is_fine_grained = preg_match('/^github_pat_[a-zA-Z0-9_]{82}$/', $token);
+                        $is_classic = preg_match('/^ghp_[a-zA-Z0-9]{36}$/', $token);
+                        $token_type = $is_fine_grained ? 'Fine-grained' : ($is_classic ? 'Classic' : 'Unknown format');
+                        ?>
+                        <p><strong><?php _e('Token:', 'smart-image-canvas'); ?></strong> <?php echo esc_html($token_prefix); ?></p>
+                        <p><strong><?php _e('Type:', 'smart-image-canvas'); ?></strong> <?php echo esc_html($token_type); ?></p>
+                        <p><strong><?php _e('Length:', 'smart-image-canvas'); ?></strong> <?php echo esc_html($token_length); ?> characters</p>
+                        <?php if (!$is_fine_grained && !$is_classic): ?>
+                            <div class="notice notice-error inline">
+                                <p><?php _e('Warning: Token format appears invalid. Expected formats: ghp_... (classic) or github_pat_... (fine-grained)', 'smart-image-canvas'); ?></p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
             <?php endif; ?>
             
             <div class="wp-afi-update-actions">
@@ -4767,6 +4791,18 @@ class SIC_Admin_Settings {
             border-radius: 4px;
             padding: 20px;
             margin-bottom: 20px;
+        }
+        
+        .wp-afi-token-status {
+            background: #fff;
+            border: 1px solid #ccd0d4;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .wp-afi-token-info p {
+            margin: 5px 0;
         }
         
         .wp-afi-version-info {
@@ -4936,13 +4972,21 @@ class SIC_Admin_Settings {
             return;
         }
         
+        // First, try to test if the repository is accessible
+        $test_result = $this->test_github_repository_access($github_token);
+        if (!$test_result['success']) {
+            wp_send_json_error($test_result['message']);
+            return;
+        }
+        
         // Get remote version from GitHub
         $api_url = 'https://api.github.com/repos/truebite/smart-image-canvas/releases/latest';
         $request = wp_remote_get($api_url, array(
             'headers' => array(
                 'Authorization' => 'Bearer ' . $github_token,
                 'User-Agent' => 'WordPress-Plugin-Updater',
-                'X-GitHub-Api-Version' => '2022-11-28'
+                'X-GitHub-Api-Version' => '2022-11-28',
+                'Accept' => 'application/vnd.github+json'
             ),
             'timeout' => 30
         ));
@@ -4953,13 +4997,26 @@ class SIC_Admin_Settings {
         }
         
         $response_code = wp_remote_retrieve_response_code($request);
+        $response_body = wp_remote_retrieve_body($request);
+        
         if ($response_code !== 200) {
-            wp_send_json_error(__('GitHub API returned error: ', 'smart-image-canvas') . $response_code);
+            // Try to get more detailed error information
+            $error_data = json_decode($response_body, true);
+            $error_message = isset($error_data['message']) ? $error_data['message'] : 'Unknown error';
+            
+            if ($response_code === 404) {
+                wp_send_json_error(__('Repository not found or token lacks access. Please check your GitHub token permissions.', 'smart-image-canvas'));
+            } elseif ($response_code === 401) {
+                wp_send_json_error(__('GitHub token is invalid or expired. Please update your token.', 'smart-image-canvas'));
+            } elseif ($response_code === 403) {
+                wp_send_json_error(__('GitHub token lacks required permissions. Please ensure token has "Contents" read access.', 'smart-image-canvas'));
+            } else {
+                wp_send_json_error(sprintf(__('GitHub API returned error %d: %s', 'smart-image-canvas'), $response_code, $error_message));
+            }
             return;
         }
         
-        $body = wp_remote_retrieve_body($request);
-        $data = json_decode($body, true);
+        $data = json_decode($response_body, true);
         
         if (!isset($data['tag_name'])) {
             wp_send_json_error(__('Invalid response from GitHub API', 'smart-image-canvas'));
@@ -5099,6 +5156,67 @@ class SIC_Admin_Settings {
         }
         
         return $html;
+    }
+    
+    /**
+     * Test GitHub repository access
+     */
+    private function test_github_repository_access($github_token) {
+        // First test: Check if repository exists and is accessible
+        $repo_url = 'https://api.github.com/repos/truebite/smart-image-canvas';
+        $request = wp_remote_get($repo_url, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $github_token,
+                'User-Agent' => 'WordPress-Plugin-Updater',
+                'Accept' => 'application/vnd.github+json'
+            ),
+            'timeout' => 15
+        ));
+        
+        if (is_wp_error($request)) {
+            return array(
+                'success' => false,
+                'message' => __('Failed to connect to GitHub: ', 'smart-image-canvas') . $request->get_error_message()
+            );
+        }
+        
+        $response_code = wp_remote_retrieve_response_code($request);
+        $response_body = wp_remote_retrieve_body($request);
+        
+        if ($response_code === 404) {
+            return array(
+                'success' => false,
+                'message' => __('Repository "truebite/smart-image-canvas" not found. Please check if the repository exists and your token has access to it.', 'smart-image-canvas')
+            );
+        } elseif ($response_code === 401) {
+            return array(
+                'success' => false,
+                'message' => __('GitHub token is invalid or expired. Please check your token.', 'smart-image-canvas')
+            );
+        } elseif ($response_code === 403) {
+            return array(
+                'success' => false,
+                'message' => __('GitHub token lacks required permissions. Please ensure your token has "Contents" read access.', 'smart-image-canvas')
+            );
+        } elseif ($response_code !== 200) {
+            $error_data = json_decode($response_body, true);
+            $error_message = isset($error_data['message']) ? $error_data['message'] : 'Unknown error';
+            return array(
+                'success' => false,
+                'message' => sprintf(__('GitHub API error %d: %s', 'smart-image-canvas'), $response_code, $error_message)
+            );
+        }
+        
+        // Parse repository data to verify it's the correct repo
+        $repo_data = json_decode($response_body, true);
+        if (!isset($repo_data['name']) || $repo_data['name'] !== 'smart-image-canvas') {
+            return array(
+                'success' => false,
+                'message' => __('Repository data is invalid or corrupted.', 'smart-image-canvas')
+            );
+        }
+        
+        return array('success' => true);
     }
 }
 

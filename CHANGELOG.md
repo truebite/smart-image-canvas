@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.8] - 2024-01-XX
+
+### Fixed
+- Improved GitHub API error handling for update checks
+- Enhanced error messages for 404, 401, and 403 GitHub API responses
+- Added repository access validation before attempting update checks
+- Better token format validation and debugging information
+
+### Enhanced
+- Added GitHub token status display in Updates tab
+- Improved error diagnostics for GitHub API connectivity issues
+- Enhanced token format detection (classic vs fine-grained)
+- Better user guidance for token permission issues
+
 ## [1.0.7] - 2024-01-XX
 
 ### Added
