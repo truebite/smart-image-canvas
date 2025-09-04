@@ -3,7 +3,7 @@
  * Plugin Name: Smart Image Canvas
  * Plugin URI: https://github.com/truebite/smart-image-canvas
  * Description: Automatically generates beautiful featured images for posts using HTML5 Canvas with customizable templates, typography, and colors.
- * Version: 1.2.6
+ * Version: 1.2.7
  * Author: TrueBite
  * Author URI: https://truebite.eu
  * License: GPL v2 or later
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('SIC_VERSION', '1.2.6');
+define('SIC_VERSION', '1.2.7');
 define('SIC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SIC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SIC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -96,6 +96,11 @@ class Smart_Image_Canvas {
         add_action('init', array($this, 'init'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_scripts'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+        
+        // Plugin update hooks to handle activation state
+        add_action('deactivate_plugin', array($this, 'on_plugin_deactivation'), 10, 1);
+        add_action('upgrader_process_complete', array($this, 'on_plugin_update_complete'), 10, 2);
+        add_filter('upgrader_pre_install', array($this, 'on_plugin_update_start'), 10, 2);
         
         // Cache cleanup hooks
         add_action('create_category', array($this, 'clear_category_cache'));
@@ -255,6 +260,54 @@ class Smart_Image_Canvas {
         
         // Clear any existing cache
         $this->clear_category_cache();
+    }
+    
+    /**
+     * Handle plugin deactivation during updates
+     */
+    public function on_plugin_deactivation($plugin) {
+        if ($plugin === SIC_PLUGIN_BASENAME) {
+            // Store that this plugin was active before deactivation
+            update_option('sic_was_active_before_update', true);
+        }
+    }
+    
+    /**
+     * Handle plugin update start
+     */
+    public function on_plugin_update_start($result, $hook_extra) {
+        if (isset($hook_extra['plugin']) && $hook_extra['plugin'] === SIC_PLUGIN_BASENAME) {
+            // Store activation state before update
+            $is_active = is_plugin_active(SIC_PLUGIN_BASENAME);
+            update_option('sic_was_active_before_update', $is_active);
+        }
+        return $result;
+    }
+    
+    /**
+     * Handle plugin update completion
+     */
+    public function on_plugin_update_complete($upgrader_object, $hook_extra) {
+        if (isset($hook_extra['action']) && $hook_extra['action'] === 'update' &&
+            isset($hook_extra['type']) && $hook_extra['type'] === 'plugin' &&
+            isset($hook_extra['plugins'])) {
+            
+            foreach ($hook_extra['plugins'] as $plugin) {
+                if ($plugin === SIC_PLUGIN_BASENAME) {
+                    // Check if plugin was active before update
+                    $was_active = get_option('sic_was_active_before_update', false);
+                    
+                    if ($was_active && !is_plugin_active(SIC_PLUGIN_BASENAME)) {
+                        // Reactivate the plugin
+                        activate_plugin(SIC_PLUGIN_BASENAME);
+                    }
+                    
+                    // Clean up the temporary option
+                    delete_option('sic_was_active_before_update');
+                    break;
+                }
+            }
+        }
     }
     
     /**

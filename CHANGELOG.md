@@ -5,7 +5,23 @@ All notable changes to Smart Image Canvas will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.6] - 2025-09-04
+# Changelog
+
+## [1.2.7] - 2024-12-19
+### Fixed
+- Enhanced plugin reactivation system with multiple WordPress hooks
+- Added comprehensive activation state tracking during updates
+- Implemented fallback reactivation methods using upgrader_process_complete hook
+- Simplified AJAX update handler to work with new hook-based activation system
+- Added admin notice for successful automatic reactivation after updates
+
+### Technical
+- Added deactivate_plugin, upgrader_process_complete, and upgrader_pre_install hooks
+- Implemented on_plugin_deactivation, on_plugin_update_start, and on_plugin_update_complete methods
+- Added check_reactivation_needed safety method in admin settings
+- Improved activation state persistence across update process
+
+## [1.2.6] - 2024-12-19
 
 ### Fixed
 - **Plugin Update Reactivation** - Fixed issue where plugin would be deactivated after update

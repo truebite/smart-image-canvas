@@ -53,6 +53,9 @@ class SIC_Admin_Settings {
         add_action('wp_ajax_SIC_perform_update', array($this, 'handle_perform_update_ajax'));
         add_action('admin_notices', array($this, 'admin_notices'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+        
+        // Additional safety hook for plugin reactivation
+        add_action('upgrader_process_complete', array($this, 'check_reactivation_needed'), 10, 2);
     }
     
     /**
@@ -1071,6 +1074,14 @@ class SIC_Admin_Settings {
             echo '<div class="notice notice-success is-dismissible">';
             echo '<p>' . __('Settings saved successfully!', 'smart-image-canvas') . '</p>';
             echo '</div>';
+        }
+        
+        // Check for automatic reactivation notice
+        if (get_option('sic_reactivated_after_update', false)) {
+            echo '<div class="notice notice-success is-dismissible">';
+            echo '<p>' . __('Smart Image Canvas was automatically reactivated after the update.', 'smart-image-canvas') . '</p>';
+            echo '</div>';
+            delete_option('sic_reactivated_after_update');
         }
     }
     
@@ -5070,27 +5081,9 @@ class SIC_Admin_Settings {
             return;
         }
         
-        // Check if plugin was active before update and reactivate if needed
-        $was_active = get_option('sic_was_active_before_update', false);
-        delete_option('sic_was_active_before_update'); // Clean up
-        
-        $current_status = is_plugin_active($plugin_slug);
-        
-        if ($was_active && !$current_status) {
-            // Plugin was active before but isn't now - try to reactivate
-            $activate_result = activate_plugin($plugin_slug);
-            if (is_wp_error($activate_result)) {
-                wp_send_json_success(array(
-                    'message' => __('Plugin updated successfully, but automatic reactivation failed. Please manually activate the plugin.', 'smart-image-canvas'),
-                    'redirect' => admin_url('plugins.php?plugin_status=inactive'),
-                    'needs_activation' => true
-                ));
-                return;
-            }
-        }
-        
+        // The reactivation is now handled by WordPress hooks in the main plugin class
         wp_send_json_success(array(
-            'message' => __('Plugin updated and reactivated successfully!', 'smart-image-canvas'),
+            'message' => __('Plugin updated successfully!', 'smart-image-canvas'),
             'redirect' => admin_url('options-general.php?page=smart-image-canvas&tab=updates&updated=1'),
             'needs_activation' => false
         ));
@@ -5178,6 +5171,39 @@ class SIC_Admin_Settings {
         }
         
         return $html;
+    }
+    
+    /**
+     * Additional safety check for plugin reactivation after updates
+     */
+    public function check_reactivation_needed($upgrader_object, $options) {
+        // Check if this is a plugin update
+        if (isset($options['type']) && $options['type'] == 'plugin') {
+            $our_plugin = 'smart-image-canvas/smart-image-canvas.php';
+            
+            // Check if our plugin was in the update
+            if (isset($options['plugins'])) {
+                foreach ($options['plugins'] as $plugin) {
+                    if ($plugin === $our_plugin) {
+                        // Check if plugin was supposed to be active
+                        $was_active = get_option('sic_was_active_before_update', false);
+                        
+                        if ($was_active && !is_plugin_active($our_plugin)) {
+                            // Try to reactivate
+                            $result = activate_plugin($our_plugin);
+                            if (!is_wp_error($result)) {
+                                // Clean up the option
+                                delete_option('sic_was_active_before_update');
+                                
+                                // Add admin notice
+                                add_option('sic_reactivated_after_update', true);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
 
