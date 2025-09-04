@@ -5,6 +5,14 @@ All notable changes to Smart Image Canvas will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2025-09-04
+
+### Fixed  
+- **Update Mechanism** - Improved plugin update functionality to work with GitHub archives
+- Fixed "Update failed for unknown reason" error by implementing more robust update process
+- Enhanced error handling for plugin updates with better diagnostic messages
+- Improved compatibility with WordPress's built-in update system
+
 ## [1.2.1] - 2025-09-04
 
 ### Enhanced  

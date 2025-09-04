@@ -4843,34 +4843,62 @@ class SIC_Admin_Settings {
         if (!class_exists('Plugin_Upgrader')) {
             require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         }
+        if (!function_exists('request_filesystem_credentials')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
         
         // For public repositories, we can use direct GitHub release downloads
-        $plugin_slug = 'smart-image-canvas/smart-image-canvas.php';
+        $plugin_slug = plugin_basename(SIC_PLUGIN_DIR . 'smart-image-canvas.php');
         $download_url = "https://github.com/truebite/smart-image-canvas/archive/refs/tags/v{$version}.zip";
         
-        // Set up the upgrader
-        $upgrader = new Plugin_Upgrader(new WP_Ajax_Upgrader_Skin());
+        // Test download URL first
+        $response = wp_remote_head($download_url);
+        if (is_wp_error($response)) {
+            wp_send_json_error(__('Failed to connect to download server: ', 'smart-image-canvas') . $response->get_error_message());
+            return;
+        }
         
-        // Perform the update
-        $result = $upgrader->upgrade($plugin_slug, array(
-            'package' => $download_url,
-            'destination' => WP_PLUGIN_DIR,
-            'clear_destination' => true,
-            'clear_working' => true,
-            'hook_extra' => array(
-                'plugin' => $plugin_slug,
-                'type' => 'plugin',
-                'action' => 'update',
-            )
-        ));
+        $response_code = wp_remote_retrieve_response_code($response);
+        if ($response_code !== 200) {
+            wp_send_json_error(sprintf(__('Download URL returned error %d. Version %s may not exist.', 'smart-image-canvas'), $response_code, $version));
+            return;
+        }
+        
+        // Use WordPress's built-in plugin updater with a different approach
+        // Temporarily modify the plugin update transient to include our update
+        $plugins_update_transient = get_site_transient('update_plugins');
+        if (!$plugins_update_transient) {
+            $plugins_update_transient = new stdClass();
+            $plugins_update_transient->response = array();
+        }
+        
+        // Add our plugin to the update queue
+        $plugins_update_transient->response[$plugin_slug] = (object) array(
+            'slug' => dirname($plugin_slug),
+            'plugin' => $plugin_slug,
+            'new_version' => $version,
+            'url' => "https://github.com/truebite/smart-image-canvas",
+            'package' => $download_url
+        );
+        
+        set_site_transient('update_plugins', $plugins_update_transient);
+        
+        // Now use WordPress's standard update mechanism
+        include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        
+        $upgrader = new Plugin_Upgrader(new WP_Ajax_Upgrader_Skin());
+        $result = $upgrader->upgrade($plugin_slug);
+        
+        // Clean up the transient
+        delete_site_transient('update_plugins');
         
         if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message());
+            wp_send_json_error(__('Update failed: ', 'smart-image-canvas') . $result->get_error_message());
             return;
         }
         
         if ($result === false) {
-            wp_send_json_error(__('Update failed for unknown reason', 'smart-image-canvas'));
+            wp_send_json_error(__('Update failed: The plugin update process returned false. This may be due to file permissions or the plugin archive structure.', 'smart-image-canvas'));
             return;
         }
         
