@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2024-01-XX
+
+### Fixed
+- Resolved GitHub API 404 errors by creating proper GitHub releases
+- Update system now works correctly with GitHub releases API
+- Fixed "No releases found" issue that was blocking updates
+
+### Enhanced
+- Complete update system functionality now operational
+- GitHub releases properly integrated with WordPress update mechanism
+
 ## [1.0.9] - 2024-01-XX
 
 ### Added
