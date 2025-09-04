@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.9] - 2024-01-XX
+
+### Added
+- GitHub token testing functionality with comprehensive diagnostics
+- "Test Token" button in Updates tab for troubleshooting
+- Multi-step token validation (authentication, repository access, releases access)
+- Enhanced logging for GitHub API interactions
+
+### Enhanced
+- Improved debugging information for GitHub API requests
+- Better error reporting with specific status codes and messages
+- Visual test results with emoji indicators for easy understanding
+
 ## [1.0.8] - 2024-01-XX
 
 ### Fixed
