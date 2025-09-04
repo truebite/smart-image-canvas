@@ -5,6 +5,19 @@ All notable changes to Smart Image Canvas will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2025-09-04
+
+### Enhanced
+- **Merged Debug Tabs** - Combined "Debug & Troubleshooting" and "Debug Logs" into a single unified tab
+- **Improved Layout** - Debug logs now appear on the right side of the troubleshooting content for better space utilization
+- **Responsive Design** - Debug tab layout adapts to smaller screens by stacking vertically on mobile devices
+- **Streamlined Navigation** - Reduced tab count by merging related debug functionality
+
+### Changed
+- Removed separate "Debug Logs" tab - logs are now integrated into the main debug tab
+- Optimized log display with compact buttons and improved styling
+- Enhanced debug tab layout with side-by-side content organization
+
 ## [1.2.4] - 2025-09-04
 
 ### Fixed

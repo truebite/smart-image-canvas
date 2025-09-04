@@ -145,6 +145,27 @@ class SIC_Admin_Settings {
         tr:has(#SIC_custom_aspect_ratio) {
             display: none;
         }
+        
+        /* Debug tab layout improvements */
+        .wp-afi-debug-container {
+            gap: 20px;
+        }
+        
+        @media (max-width: 1200px) {
+            .wp-afi-debug-container {
+                flex-direction: column !important;
+            }
+            .wp-afi-debug-right {
+                flex: 1 !important;
+                min-width: auto !important;
+            }
+        }
+        
+        .wp-afi-debug-right h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #ccd0d4;
+            padding-bottom: 10px;
+        }
         ";
         
         wp_add_inline_style('admin-menu', $admin_css);
@@ -404,9 +425,6 @@ class SIC_Admin_Settings {
                 <a href="?page=smart-image-canvas&tab=debug" class="nav-tab <?php echo $active_tab === 'debug' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Debug & Troubleshooting', 'smart-image-canvas'); ?>
                 </a>
-                <a href="?page=smart-image-canvas&tab=logs" class="nav-tab <?php echo $active_tab === 'logs' ? 'nav-tab-active' : ''; ?>">
-                    <?php _e('Debug Logs', 'smart-image-canvas'); ?>
-                </a>
             </nav>
             
             <?php if ($active_tab === 'settings'): ?>
@@ -498,10 +516,8 @@ class SIC_Admin_Settings {
                 </script>
             <?php elseif ($active_tab === 'updates'): ?>
                 <?php $this->render_updates_tab(); ?>
-            <?php elseif ($active_tab === 'debug' || $active_tab === 'self-test'): ?>
+            <?php elseif ($active_tab === 'debug' || $active_tab === 'self-test' || $active_tab === 'logs'): ?>
                 <?php $this->render_debug_tab(); ?>
-            <?php elseif ($active_tab === 'logs'): ?>
-                <?php $this->render_logs_tab(); ?>
             <?php endif; ?>
         </div>
         <?php
@@ -1075,7 +1091,9 @@ class SIC_Admin_Settings {
             $test_results = SIC_Debug::test_generation($post_id);
         }
         ?>
-        <div class="wp-afi-debug-container">
+        <div class="wp-afi-debug-container" style="display: flex; gap: 20px;">
+            <!-- Left Column: Debug & Troubleshooting -->
+            <div class="wp-afi-debug-left" style="flex: 1; min-width: 0;">
             
             <!-- Quick Test Section -->
             <div class="wp-afi-test-section">
@@ -1474,48 +1492,47 @@ class SIC_Admin_Settings {
             });
         });
         </script>
-        <?php
-    }
-
-    /**
-     * Render the logs tab
-     */
-    private function render_logs_tab() {
-        $logger = SIC_Debug_Logger::instance();
-        $logs = $logger->get_logs();
+        </div>
+        <!-- End Left Column -->
         
-        // Handle log actions
-        if (isset($_POST['clear_logs']) && wp_verify_nonce($_POST['_wpnonce'], 'sic_clear_logs')) {
-            $logger->clear_logs();
-            echo '<div class="notice notice-success"><p>' . __('Logs cleared successfully.', 'smart-image-canvas') . '</p></div>';
-            $logs = []; // Clear the display
-        }
-        
-        if (isset($_POST['export_logs']) && wp_verify_nonce($_POST['_wpnonce'], 'sic_export_logs')) {
-            $this->export_logs();
-            return;
-        }
-        ?>
-        
-        <div class="wrap">
+        <!-- Right Column: Debug Logs -->
+        <div class="wp-afi-debug-right" style="flex: 0 0 400px; min-width: 0;">
+            <?php
+            // Include logs content here
+            $logger = SIC_Debug_Logger::instance();
+            $logs = $logger->get_logs();
+            
+            // Handle log actions
+            if (isset($_POST['clear_logs']) && wp_verify_nonce($_POST['_wpnonce'], 'sic_clear_logs')) {
+                $logger->clear_logs();
+                echo '<div class="notice notice-success"><p>' . __('Logs cleared successfully.', 'smart-image-canvas') . '</p></div>';
+                $logs = []; // Clear the display
+            }
+            
+            if (isset($_POST['export_logs']) && wp_verify_nonce($_POST['_wpnonce'], 'sic_export_logs')) {
+                $this->export_logs();
+                return;
+            }
+            ?>
+            
             <h2><?php _e('Debug Logs', 'smart-image-canvas'); ?></h2>
             
-            <div style="margin-bottom: 20px;">
-                <form method="post" style="display: inline-block; margin-right: 10px;">
+            <div style="margin-bottom: 15px;">
+                <form method="post" style="display: inline-block; margin-right: 8px;">
                     <?php wp_nonce_field('sic_clear_logs'); ?>
-                    <input type="submit" name="clear_logs" class="button button-secondary" 
-                           value="<?php _e('Clear All Logs', 'smart-image-canvas'); ?>"
+                    <input type="submit" name="clear_logs" class="button button-secondary button-small" 
+                           value="<?php _e('Clear', 'smart-image-canvas'); ?>"
                            onclick="return confirm('<?php _e('Are you sure you want to clear all logs?', 'smart-image-canvas'); ?>');">
                 </form>
                 
-                <form method="post" style="display: inline-block;">
+                <form method="post" style="display: inline-block; margin-right: 8px;">
                     <?php wp_nonce_field('sic_export_logs'); ?>
-                    <input type="submit" name="export_logs" class="button button-secondary" 
-                           value="<?php _e('Export Logs', 'smart-image-canvas'); ?>">
+                    <input type="submit" name="export_logs" class="button button-secondary button-small" 
+                           value="<?php _e('Export', 'smart-image-canvas'); ?>">
                 </form>
                 
-                <button type="button" class="button button-primary" onclick="location.reload();">
-                    <?php _e('Refresh Logs', 'smart-image-canvas'); ?>
+                <button type="button" class="button button-primary button-small" onclick="location.reload();">
+                    <?php _e('Refresh', 'smart-image-canvas'); ?>
                 </button>
             </div>
             
@@ -1524,7 +1541,7 @@ class SIC_Admin_Settings {
                     <p><?php _e('No logs available.', 'smart-image-canvas'); ?></p>
                 </div>
             <?php else: ?>
-                <div style="background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; max-height: 600px; overflow-y: auto; padding: 15px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4;">
+                <div style="background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; max-height: 500px; overflow-y: auto; padding: 12px; font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.3;">
                     <?php foreach (array_reverse($logs) as $log): ?>
                         <?php
                         $level_class = '';
@@ -1543,20 +1560,20 @@ class SIC_Admin_Settings {
                                 break;
                         }
                         ?>
-                        <div style="margin-bottom: 8px; padding: 5px; border-left: 3px solid #ddd;">
+                        <div style="margin-bottom: 6px; padding: 4px; border-left: 2px solid #ddd;">
                             <div style="<?php echo $level_class; ?>">
-                                <strong>[<?php echo esc_html($log['timestamp']); ?>] <?php echo esc_html($log['level']); ?>:</strong>
+                                <strong>[<?php echo esc_html(substr($log['timestamp'], 11, 8)); ?>] <?php echo esc_html($log['level']); ?>:</strong>
                                 <?php echo esc_html($log['message']); ?>
                             </div>
                             <?php if (!empty($log['context'])): ?>
-                                <div style="color: #666; font-size: 11px; margin-top: 3px;">
+                                <div style="color: #666; font-size: 10px; margin-top: 2px;">
                                     <strong>Context:</strong> <?php echo esc_html(json_encode($log['context'], JSON_PRETTY_PRINT)); ?>
                                 </div>
                             <?php endif; ?>
                             <?php if (!empty($log['backtrace'])): ?>
-                                <details style="margin-top: 5px;">
-                                    <summary style="cursor: pointer; color: #666; font-size: 11px;">Show Backtrace</summary>
-                                    <pre style="background: #f6f7f7; padding: 8px; margin: 5px 0; font-size: 10px; overflow-x: auto;"><?php echo esc_html($log['backtrace']); ?></pre>
+                                <details style="margin-top: 3px;">
+                                    <summary style="cursor: pointer; color: #666; font-size: 10px;">Show Backtrace</summary>
+                                    <pre style="background: #f6f7f7; padding: 6px; margin: 3px 0; font-size: 9px; overflow-x: auto;"><?php echo esc_html($log['backtrace']); ?></pre>
                                 </details>
                             <?php endif; ?>
                         </div>
@@ -1564,27 +1581,31 @@ class SIC_Admin_Settings {
                 </div>
             <?php endif; ?>
             
-            <div style="margin-top: 20px; padding: 15px; background: #f0f0f1; border-radius: 4px;">
-                <h3><?php _e('Log Information', 'smart-image-canvas'); ?></h3>
-                <ul>
+            <div style="margin-top: 15px; padding: 12px; background: #f0f0f1; border-radius: 4px; font-size: 12px;">
+                <h4 style="margin-top: 0; margin-bottom: 8px;"><?php _e('Log Information', 'smart-image-canvas'); ?></h4>
+                <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
                     <li><strong><?php _e('Total logs:', 'smart-image-canvas'); ?></strong> <?php echo count($logs); ?></li>
-                    <li><strong><?php _e('Log levels:', 'smart-image-canvas'); ?></strong> ERROR, WARNING, INFO, DEBUG</li>
-                    <li><strong><?php _e('Auto-rotation:', 'smart-image-canvas'); ?></strong> <?php _e('Logs are automatically rotated when they exceed 1000 entries', 'smart-image-canvas'); ?></li>
+                    <li><strong><?php _e('Levels:', 'smart-image-canvas'); ?></strong> ERROR, WARNING, INFO, DEBUG</li>
+                    <li><strong><?php _e('Auto-rotation:', 'smart-image-canvas'); ?></strong> <?php _e('Max 1000 entries', 'smart-image-canvas'); ?></li>
                 </ul>
             </div>
+            
+            <script>
+            // Auto-refresh logs every 30 seconds if debug is enabled
+            <?php if (!empty($this->get_settings()['debug_enabled'])): ?>
+            setInterval(function() {
+                // Only refresh if we're still on the debug tab
+                if (window.location.href.includes('tab=debug') || window.location.href.includes('tab=logs')) {
+                    location.reload();
+                }
+            }, 30000);
+            <?php endif; ?>
+            </script>
         </div>
+        <!-- End Right Column -->
         
-        <script>
-        // Auto-refresh logs every 30 seconds if debug is enabled
-        <?php if (!empty($this->get_settings()['debug_enabled'])): ?>
-        setInterval(function() {
-            // Only refresh if we're still on the logs tab
-            if (window.location.href.includes('tab=logs')) {
-                location.reload();
-            }
-        }, 30000);
-        <?php endif; ?>
-        </script>
+        </div>
+        <!-- End Container -->
         <?php
     }
 
