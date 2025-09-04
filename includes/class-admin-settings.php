@@ -5128,6 +5128,13 @@ class SIC_Admin_Settings {
         // Look for the plugin ZIP asset
         $download_url = null;
         $is_asset_download = false;
+        
+        // For now, prefer zipball over assets for better reliability
+        $download_url = $data['zipball_url'];
+        $is_asset_download = false;
+        
+        // Alternative: Look for assets (commented out for testing)
+        /*
         if (isset($data['assets']) && is_array($data['assets'])) {
             foreach ($data['assets'] as $asset) {
                 if (strpos($asset['name'], 'smart-image-canvas-v') === 0 && pathinfo($asset['name'], PATHINFO_EXTENSION) === 'zip') {
@@ -5144,6 +5151,7 @@ class SIC_Admin_Settings {
             $download_url = $data['zipball_url'];
             $is_asset_download = false;
         }
+        */
         
         // Include WordPress update functions
         if (!function_exists('get_plugins')) {
@@ -5159,12 +5167,13 @@ class SIC_Admin_Settings {
         // First, try to download the file manually with proper authentication
         $headers = array(
             'Authorization' => 'Bearer ' . $github_token,
-            'X-GitHub-Api-Version' => '2022-11-28',
             'User-Agent' => 'WordPress-Plugin-Updater'
         );
         
+        // For zipball downloads, use standard JSON accept header
         if ($is_asset_download) {
             $headers['Accept'] = 'application/octet-stream';
+            $headers['X-GitHub-Api-Version'] = '2022-11-28';
         } else {
             $headers['Accept'] = 'application/vnd.github.v3+json';
         }
