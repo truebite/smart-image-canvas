@@ -5156,45 +5156,56 @@ class SIC_Admin_Settings {
         // Create a custom upgrader to handle GitHub downloads
         $plugin_slug = 'smart-image-canvas/smart-image-canvas.php';
         
+        // First, try to download the file manually with proper authentication
+        $headers = array(
+            'Authorization' => 'Bearer ' . $github_token,
+            'X-GitHub-Api-Version' => '2022-11-28',
+            'User-Agent' => 'WordPress-Plugin-Updater'
+        );
+        
+        if ($is_asset_download) {
+            $headers['Accept'] = 'application/octet-stream';
+        } else {
+            $headers['Accept'] = 'application/vnd.github.v3+json';
+        }
+        
+        $args = array(
+            'headers' => $headers,
+            'timeout' => 300
+        );
+        
+        // Download the file
+        $temp_file = download_url($download_url, 300, false, $args);
+        
+        if (is_wp_error($temp_file)) {
+            wp_send_json_error(__('Failed to download update: ', 'smart-image-canvas') . $temp_file->get_error_message());
+            return;
+        }
+        
+        // Verify the file was downloaded and is a valid ZIP
+        if (!file_exists($temp_file) || filesize($temp_file) == 0) {
+            wp_send_json_error(__('Downloaded file is empty or invalid', 'smart-image-canvas'));
+            return;
+        }
+        
         // Set up the upgrader
         $upgrader = new Plugin_Upgrader(new WP_Ajax_Upgrader_Skin());
         
-        // Both asset downloads and zipball downloads from private repos need authentication
-        add_filter('upgrader_pre_download', function($reply, $package, $obj) use ($github_token, $is_asset_download) {
-            if (strpos($package, 'github.com') !== false || strpos($package, 'api.github.com') !== false) {
-                $headers = array(
-                    'Authorization' => 'Bearer ' . $github_token,
-                    'X-GitHub-Api-Version' => '2022-11-28'
-                );
-                
-                // For asset downloads, we need specific accept header
-                if ($is_asset_download) {
-                    $headers['Accept'] = 'application/octet-stream';
-                } else {
-                    $headers['Accept'] = 'application/vnd.github.v3+json';
-                }
-                
-                $args = array(
-                    'headers' => $headers,
-                    'timeout' => 300
-                );
-                
-                return download_url($package, 300, false, $args);
-            }
-            return $reply;
-        }, 10, 3);
+        // Remove the filter since we've already downloaded the file
+        // The upgrader will use the local temp file
+        $local_package = $temp_file;
         
         // Create mock plugin data for the upgrader
         $plugin_data = array(
             'slug' => 'smart-image-canvas',
             'plugin' => $plugin_slug,
             'new_version' => $version,
-            'package' => $download_url
+            'package' => $local_package // Use the local downloaded file
         );
         
-        // Perform the update
+        // Perform the update using the local file
         $result = $upgrader->upgrade($plugin_slug, array(
-            'package' => $download_url,
+            'package' => $local_package,
             'destination' => WP_PLUGIN_DIR,
             'clear_destination' => true,
             'clear_working' => true,
@@ -5204,6 +5215,11 @@ class SIC_Admin_Settings {
                 'action' => 'update',
             )
         ));
+        
+        // Clean up the temporary file
+        if (file_exists($temp_file)) {
+            unlink($temp_file);
+        }
         
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
