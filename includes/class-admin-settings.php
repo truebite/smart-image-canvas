@@ -4557,6 +4557,14 @@ class SIC_Admin_Settings {
                     <span class="wp-afi-version-number"><?php echo esc_html($current_version); ?></span>
                     <span class="wp-afi-version-label"><?php _e('Installed', 'smart-image-canvas'); ?></span>
                 </div>
+                <?php 
+                $last_checked = get_option('sic_last_update_check', false);
+                if ($last_checked) {
+                    echo '<p style="margin-top: 10px; color: #666; font-size: 0.9em;">';
+                    echo sprintf(__('Last checked for updates: %s', 'smart-image-canvas'), date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_checked));
+                    echo '</p>';
+                }
+                ?>
             </div>
             
             <div class="wp-afi-update-actions">
@@ -4802,6 +4810,9 @@ class SIC_Admin_Settings {
         
         $remote_version = ltrim($data['tag_name'], 'v');
         $is_update_available = version_compare($current_version, $remote_version, '<');
+        
+        // Update the last checked timestamp
+        update_option('sic_last_update_check', current_time('timestamp'));
         
         $html = $this->generate_update_check_html($current_version, $remote_version, $is_update_available, $data);
         
