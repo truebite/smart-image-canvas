@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2024-01-XX
+
+### Fixed
+- Fixed plugin update download mechanism to use GitHub release assets
+- Improved update reliability by checking for ZIP assets before falling back to zipball
+- Enhanced download URL handling for both release assets and automatic zipballs
+- Fixed "Not Found" error during plugin updates
+
+### Enhanced
+- Better error handling during update process
+- Automatic detection of release assets vs zipball downloads
+- Improved authentication handling for different download methods
+
 ## [1.1.0] - 2024-01-XX
 
 ### Fixed

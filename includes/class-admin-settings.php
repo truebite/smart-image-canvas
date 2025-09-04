@@ -5096,6 +5096,51 @@ class SIC_Admin_Settings {
             return;
         }
         
+        // Get release information to find the download URL
+        $api_url = "https://api.github.com/repos/truebite/smart-image-canvas/releases/tags/v{$version}";
+        $request = wp_remote_get($api_url, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $github_token,
+                'User-Agent' => 'WordPress-Plugin-Updater',
+                'X-GitHub-Api-Version' => '2022-11-28',
+                'Accept' => 'application/vnd.github+json'
+            ),
+            'timeout' => 30
+        ));
+        
+        if (is_wp_error($request)) {
+            wp_send_json_error(__('Failed to connect to GitHub API: ', 'smart-image-canvas') . $request->get_error_message());
+            return;
+        }
+        
+        $response_code = wp_remote_retrieve_response_code($request);
+        if ($response_code !== 200) {
+            wp_send_json_error(__('GitHub API returned error: ', 'smart-image-canvas') . $response_code);
+            return;
+        }
+        
+        $data = json_decode(wp_remote_retrieve_body($request), true);
+        if (!$data) {
+            wp_send_json_error(__('Invalid response from GitHub API', 'smart-image-canvas'));
+            return;
+        }
+        
+        // Look for the plugin ZIP asset
+        $download_url = null;
+        if (isset($data['assets']) && is_array($data['assets'])) {
+            foreach ($data['assets'] as $asset) {
+                if (strpos($asset['name'], 'smart-image-canvas-v') === 0 && pathinfo($asset['name'], PATHINFO_EXTENSION) === 'zip') {
+                    $download_url = $asset['browser_download_url'];
+                    break;
+                }
+            }
+        }
+        
+        // Fallback to zipball if no asset found
+        if (!$download_url) {
+            $download_url = $data['zipball_url'];
+        }
+        
         // Include WordPress update functions
         if (!function_exists('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -5106,27 +5151,34 @@ class SIC_Admin_Settings {
         
         // Create a custom upgrader to handle GitHub downloads
         $plugin_slug = 'smart-image-canvas/smart-image-canvas.php';
-        $download_url = "https://api.github.com/repos/truebite/smart-image-canvas/zipball/v{$version}";
         
         // Set up the upgrader
         $upgrader = new Plugin_Upgrader(new WP_Ajax_Upgrader_Skin());
         
-        // Temporarily modify the package URL for this plugin
-        add_filter('upgrader_pre_download', function($reply, $package, $obj) use ($download_url, $github_token) {
-            if (strpos($package, 'github.com') !== false && strpos($package, 'smart-image-canvas') !== false) {
-                $args = array(
-                    'headers' => array(
-                        'Authorization' => 'Bearer ' . $github_token,
-                        'Accept' => 'application/vnd.github.v3+json',
-                        'X-GitHub-Api-Version' => '2022-11-28'
-                    ),
-                    'timeout' => 300
-                );
-                
-                return download_url($package, 300, false, $args);
-            }
-            return $reply;
-        }, 10, 3);
+        // For release assets, we can download directly; for zipball, we need auth
+        if (strpos($download_url, 'releases/download/') !== false) {
+            // Direct download from release asset - no auth needed for public releases
+            $download_args = array(
+                'timeout' => 300
+            );
+        } else {
+            // Zipball download - requires authentication
+            add_filter('upgrader_pre_download', function($reply, $package, $obj) use ($github_token) {
+                if (strpos($package, 'github.com') !== false && strpos($package, 'smart-image-canvas') !== false) {
+                    $args = array(
+                        'headers' => array(
+                            'Authorization' => 'Bearer ' . $github_token,
+                            'Accept' => 'application/vnd.github.v3+json',
+                            'X-GitHub-Api-Version' => '2022-11-28'
+                        ),
+                        'timeout' => 300
+                    );
+                    
+                    return download_url($package, 300, false, $args);
+                }
+                return $reply;
+            }, 10, 3);
+        }
         
         // Create mock plugin data for the upgrader
         $plugin_data = array(
