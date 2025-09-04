@@ -5,6 +5,19 @@ All notable changes to Smart Image Canvas will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6] - 2025-09-04
+
+### Fixed
+- **Plugin Update Reactivation** - Fixed issue where plugin would be deactivated after update
+- **Update Redirection** - Improved post-update redirection to prevent "access denied" errors
+- **Activation State Management** - Plugin now properly tracks and restores activation state during updates
+
+### Enhanced
+- **Update Success Messages** - Added clear success messages when plugin updates complete
+- **Better Error Handling** - Enhanced update process with better error reporting and user guidance
+- **Automatic Reactivation** - Plugin automatically reactivates itself after successful updates
+- **Improved User Experience** - Users are now properly redirected to the plugin settings after updates
+
 ## [1.2.5] - 2025-09-04
 
 ### Enhanced

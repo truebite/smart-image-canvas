@@ -4663,6 +4663,13 @@ class SIC_Admin_Settings {
      */
     private function render_updates_tab() {
         $current_version = SIC_VERSION;
+        
+        // Show success message if redirected after update
+        if (isset($_GET['updated']) && $_GET['updated'] == '1') {
+            echo '<div class="notice notice-success is-dismissible">';
+            echo '<p>' . __('Plugin updated successfully and reactivated!', 'smart-image-canvas') . '</p>';
+            echo '</div>';
+        }
         ?>
         <div class="wp-afi-updates-container">
             <div class="wp-afi-updates-header">
@@ -4866,7 +4873,28 @@ class SIC_Admin_Settings {
                     },
                     success: function(response) {
                         if (response.success) {
-                            location.reload(); // Reload page to reflect new version
+                            // Handle different response types
+                            if (response.data && typeof response.data === 'object') {
+                                var message = response.data.message || '<?php _e('Plugin updated successfully!', 'smart-image-canvas'); ?>';
+                                var redirect = response.data.redirect;
+                                var needsActivation = response.data.needs_activation;
+                                
+                                if (needsActivation) {
+                                    alert(message + '\n\n<?php _e('You will be redirected to the plugins page to activate the plugin.', 'smart-image-canvas'); ?>');
+                                } else {
+                                    alert(message);
+                                }
+                                
+                                if (redirect) {
+                                    window.location.href = redirect;
+                                } else {
+                                    location.reload();
+                                }
+                            } else {
+                                // Fallback for simple string response
+                                alert(response.data || '<?php _e('Plugin updated successfully!', 'smart-image-canvas'); ?>');
+                                location.reload();
+                            }
                         } else {
                             alert('<?php _e('Update failed:', 'smart-image-canvas'); ?> ' + response.data);
                             button.prop('disabled', false).text('<?php _e('Install Update', 'smart-image-canvas'); ?>');
@@ -4970,6 +4998,10 @@ class SIC_Admin_Settings {
         $plugin_slug = plugin_basename(SIC_PLUGIN_DIR . 'smart-image-canvas.php');
         $download_url = "https://github.com/truebite/smart-image-canvas/archive/refs/tags/v{$version}.zip";
         
+        // Store current activation state before update
+        $was_plugin_active = is_plugin_active($plugin_slug);
+        update_option('sic_was_active_before_update', $was_plugin_active);
+        
         // Test download URL first - handle redirects properly
         $response = wp_remote_head($download_url, array(
             'timeout' => 30,
@@ -5038,7 +5070,30 @@ class SIC_Admin_Settings {
             return;
         }
         
-        wp_send_json_success(__('Plugin updated successfully!', 'smart-image-canvas'));
+        // Check if plugin was active before update and reactivate if needed
+        $was_active = get_option('sic_was_active_before_update', false);
+        delete_option('sic_was_active_before_update'); // Clean up
+        
+        $current_status = is_plugin_active($plugin_slug);
+        
+        if ($was_active && !$current_status) {
+            // Plugin was active before but isn't now - try to reactivate
+            $activate_result = activate_plugin($plugin_slug);
+            if (is_wp_error($activate_result)) {
+                wp_send_json_success(array(
+                    'message' => __('Plugin updated successfully, but automatic reactivation failed. Please manually activate the plugin.', 'smart-image-canvas'),
+                    'redirect' => admin_url('plugins.php?plugin_status=inactive'),
+                    'needs_activation' => true
+                ));
+                return;
+            }
+        }
+        
+        wp_send_json_success(array(
+            'message' => __('Plugin updated and reactivated successfully!', 'smart-image-canvas'),
+            'redirect' => admin_url('options-general.php?page=smart-image-canvas&tab=updates&updated=1'),
+            'needs_activation' => false
+        ));
     }
     
     /**

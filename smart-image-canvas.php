@@ -3,7 +3,7 @@
  * Plugin Name: Smart Image Canvas
  * Plugin URI: https://github.com/truebite/smart-image-canvas
  * Description: Automatically generates beautiful featured images for posts using HTML5 Canvas with customizable templates, typography, and colors.
- * Version: 1.2.5
+ * Version: 1.2.6
  * Author: TrueBite
  * Author URI: https://truebite.eu
  * License: GPL v2 or later
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('SIC_VERSION', '1.2.5');
+define('SIC_VERSION', '1.2.6');
 define('SIC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SIC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SIC_PLUGIN_BASENAME', plugin_basename(__FILE__));
