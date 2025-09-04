@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.6] - 2024-01-XX
+
+### Enhanced
+- Improved GitHub token validation with proper format checking
+- Added support for both classic (ghp_...) and fine-grained (github_pat_...) GitHub token formats
+- Enhanced error messages for invalid GitHub tokens with clear format requirements
+- Better logging for GitHub token validation events
+
+### Security
+- Strengthened input validation for GitHub tokens to prevent malformed tokens
+- Added regex pattern matching for GitHub token format verification
+
 ## [1.0.5] - 2024-01-XX
 
 ### Fixed

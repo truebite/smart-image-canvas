@@ -1055,13 +1055,46 @@ class SIC_Admin_Settings {
             $sanitized['category_colors'] = array();
         }
         
-        // GitHub token field
+        // GitHub token field with enhanced validation
         $github_token = isset($input['github_token']) ? sanitize_text_field($input['github_token']) : '';
+        
+        // Validate GitHub token format if provided
+        if (!empty($github_token)) {
+            $is_valid_token = false;
+            
+            // Check for fine-grained personal access tokens (new format)
+            if (preg_match('/^github_pat_[a-zA-Z0-9_]{82}$/', $github_token)) {
+                $is_valid_token = true;
+                $token_type = 'fine-grained';
+            }
+            // Check for classic personal access tokens (legacy format)
+            elseif (preg_match('/^ghp_[a-zA-Z0-9]{36}$/', $github_token)) {
+                $is_valid_token = true;
+                $token_type = 'classic';
+            }
+            
+            if (!$is_valid_token) {
+                add_settings_error('SIC_settings', 'github_token_invalid', 
+                    __('Invalid GitHub token format. Please use a valid personal access token (classic format: ghp_... or fine-grained format: github_pat_...).', 'smart-image-canvas'));
+                $github_token = $defaults['github_token']; // Revert to default (empty)
+                $logger->warning('Invalid GitHub token format rejected', array(
+                    'token_length' => strlen($github_token),
+                    'token_prefix' => substr($github_token, 0, 10) . '...'
+                ));
+            } else {
+                $logger->info('Valid GitHub token accepted', array(
+                    'token_type' => $token_type,
+                    'token_length' => strlen($github_token)
+                ));
+            }
+        }
+        
         $sanitized['github_token'] = $github_token;
         $logger->info('GitHub token processed', array(
             'has_token' => !empty($github_token),
             'token_length' => strlen($github_token),
-            'input_has_token' => isset($input['github_token'])
+            'input_has_token' => isset($input['github_token']),
+            'is_valid_format' => !empty($github_token) ? $is_valid_token : true
         ));
         
         $logger->info('Settings sanitization completed', array('sanitized_keys' => array_keys($sanitized)));
