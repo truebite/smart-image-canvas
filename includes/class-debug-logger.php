@@ -28,6 +28,13 @@ class SIC_Debug_Logger {
     }
     
     /**
+     * Get singleton instance (alias for backward compatibility)
+     */
+    public static function instance() {
+        return self::get_instance();
+    }
+    
+    /**
      * Private constructor
      */
     private function __construct() {

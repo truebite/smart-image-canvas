@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.5] - 2024-01-XX
+
+### Fixed
+- Fixed fatal error with SIC_Debug_Logger::instance() being called before class was loaded
+- Fixed menu slug inconsistency preventing access to settings pages
+- Plugin updater now properly checks for debug logger availability before using it
+- Corrected navigation links to use proper 'smart-image-canvas' slug instead of old 'wp-auto-featured-image'
+- Moved plugin updater initialization to constructor to ensure dependencies are loaded
+
+### Enhanced
+- Added safety checks for debug logger throughout plugin updater
+- Improved error handling when debug logger is not available
+
 ## [1.0.4] - 2024-01-XX
 
 ### Enhanced

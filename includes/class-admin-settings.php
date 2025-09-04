@@ -58,8 +58,8 @@ class SIC_Admin_Settings {
      */
     public function add_admin_menu() {
         add_options_page(
-            __('Auto Featured Image Settings', 'smart-image-canvas'),
-            __('Auto Featured Image', 'smart-image-canvas'),
+            __('Smart Image Canvas Settings', 'smart-image-canvas'),
+            __('Smart Image Canvas', 'smart-image-canvas'),
             'manage_options',
             'smart-image-canvas',
             array($this, 'settings_page')
@@ -71,7 +71,7 @@ class SIC_Admin_Settings {
      */
     public function enqueue_admin_scripts($hook) {
         // Only load on our settings page
-        if ($hook !== 'settings_page_wp-auto-featured-image') {
+        if ($hook !== 'settings_page_smart-image-canvas') {
             return;
         }
         
@@ -384,13 +384,13 @@ class SIC_Admin_Settings {
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
             
             <nav class="nav-tab-wrapper">
-                <a href="?page=wp-auto-featured-image&tab=settings" class="nav-tab <?php echo $active_tab === 'settings' ? 'nav-tab-active' : ''; ?>">
+                <a href="?page=smart-image-canvas&tab=settings" class="nav-tab <?php echo $active_tab === 'settings' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Settings', 'smart-image-canvas'); ?>
                 </a>
-                <a href="?page=wp-auto-featured-image&tab=debug" class="nav-tab <?php echo $active_tab === 'debug' ? 'nav-tab-active' : ''; ?>">
+                <a href="?page=smart-image-canvas&tab=debug" class="nav-tab <?php echo $active_tab === 'debug' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Debug & Troubleshooting', 'smart-image-canvas'); ?>
                 </a>
-                <a href="?page=wp-auto-featured-image&tab=logs" class="nav-tab <?php echo $active_tab === 'logs' ? 'nav-tab-active' : ''; ?>">
+                <a href="?page=smart-image-canvas&tab=logs" class="nav-tab <?php echo $active_tab === 'logs' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Debug Logs', 'smart-image-canvas'); ?>
                 </a>
             </nav>
