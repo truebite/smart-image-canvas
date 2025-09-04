@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('SIC_VERSION', '1.0.9');
+define('SIC_VERSION', '1.1.0');
 define('SIC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SIC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SIC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -200,7 +200,6 @@ class Smart_Image_Canvas {
             'enable_category_colors' => false,
             'category_colors' => array(),
             'custom_css' => '',
-            'github_token' => '',
             'debug_enabled' => false
         );
         
@@ -243,7 +242,6 @@ class Smart_Image_Canvas {
             'enable_category_colors' => false,
             'category_colors' => array(),
             'custom_css' => '',
-            'github_token' => '',
             'debug_enabled' => false
         );
         

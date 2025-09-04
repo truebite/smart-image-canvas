@@ -5,9 +5,25 @@ All notable changes to Smart Image Canvas will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# Changelog
+## [1.1.0] - 2024-01-XX
 
-All notable changes to this project will be documented in this file.
+### Changed  
+- **Repository made public** - Simplified update system by making GitHub repository public
+- Removed all GitHub token authentication requirements
+- Simplified update system to use direct public repository downloads
+- Removed private repository access complexity and token management
+
+### Removed
+- GitHub token field from settings (no longer needed for public repository)
+- Private repository authentication and token validation
+- GitHub token testing functionality
+- All GitHub authentication-related code and UI elements
+
+### Enhanced
+- Streamlined update process using public GitHub API endpoints
+- Direct archive downloads from `https://github.com/truebite/smart-image-canvas/archive/refs/tags/v{version}.zip`
+- Simplified Updates tab interface without token requirements
+- Public repository access information in update documentation
 
 ## [1.1.2] - 2024-01-XX
 

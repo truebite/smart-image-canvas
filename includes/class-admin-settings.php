@@ -51,7 +51,6 @@ class SIC_Admin_Settings {
         add_action('wp_ajax_SIC_self_test', array($this, 'handle_self_test_ajax'));
         add_action('wp_ajax_SIC_check_update', array($this, 'handle_check_update_ajax'));
         add_action('wp_ajax_SIC_perform_update', array($this, 'handle_perform_update_ajax'));
-        add_action('wp_ajax_SIC_test_token', array($this, 'handle_test_token_ajax'));
         add_action('admin_notices', array($this, 'admin_notices'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
     }
@@ -355,15 +354,6 @@ class SIC_Admin_Settings {
             'smart-image-canvas',
             'SIC_advanced_section',
             array('field' => 'custom_css', 'rows' => '10', 'description' => __('Add custom CSS to override styles', 'smart-image-canvas'))
-        );
-        
-        add_settings_field(
-            'github_token',
-            __('GitHub Token', 'smart-image-canvas'),
-            array($this, 'github_token_field'),
-            'smart-image-canvas',
-            'SIC_advanced_section',
-            array('field' => 'github_token', 'description' => __('GitHub Fine-grained Personal Access Token for automatic updates from private repository', 'smart-image-canvas'))
         );
         
         add_settings_field(
@@ -726,115 +716,6 @@ class SIC_Admin_Settings {
         }
     }
     
-    public function github_token_field($args) {
-        $settings = Smart_Image_Canvas::get_settings();
-        $field = $args['field'];
-        $value = isset($settings[$field]) ? $settings[$field] : '';
-        $placeholder = $args['placeholder'] ?? '';
-        $description = $args['description'] ?? '';
-        $has_token = !empty($value);
-        
-        echo '<div class="sic-github-token-wrapper">';
-        
-        if ($has_token) {
-            // Show placeholder dots to indicate token is set
-            echo sprintf(
-                '<input type="text" id="SIC_%s_display" value="••••••••••••••••••••••••••••••••••••••••" readonly class="regular-text wp-afi-field sic-token-display" />',
-                esc_attr($field)
-            );
-            echo '<button type="button" class="button sic-clear-token" data-field="' . esc_attr($field) . '" style="margin-left: 10px;">' . __('Clear Token', 'smart-image-canvas') . '</button>';
-            echo '<button type="button" class="button sic-edit-token" data-field="' . esc_attr($field) . '" style="margin-left: 5px;">' . __('Edit Token', 'smart-image-canvas') . '</button>';
-            
-            // Hidden input with actual value for saving (always present)
-            echo sprintf(
-                '<input type="hidden" id="SIC_%s" name="SIC_settings[%s]" value="%s" class="sic-token-hidden" />',
-                esc_attr($field),
-                esc_attr($field),
-                esc_attr($value)
-            );
-            
-            // Hidden input for editing (only shown when editing)
-            echo sprintf(
-                '<input type="password" id="SIC_%s_edit" value="%s" placeholder="%s" class="regular-text wp-afi-field sic-token-edit" style="display: none; margin-top: 10px;" />',
-                esc_attr($field),
-                esc_attr($value),
-                esc_attr($placeholder ?: __('Enter your GitHub fine-grained token...', 'smart-image-canvas'))
-            );
-        } else {
-            // Show normal input when no token is set
-            echo sprintf(
-                '<input type="password" id="SIC_%s" name="SIC_settings[%s]" value="%s" placeholder="%s" class="regular-text wp-afi-field" />',
-                esc_attr($field),
-                esc_attr($field),
-                esc_attr($value),
-                esc_attr($placeholder ?: __('Enter your GitHub fine-grained token...', 'smart-image-canvas'))
-            );
-        }
-        
-        echo '</div>';
-        
-        if ($description) {
-            echo '<p class="description">' . esc_html($description) . '</p>';
-        }
-        
-        // Add status indicator
-        if ($has_token) {
-            echo '<p class="description" style="color: #008000; font-weight: 500;"><span class="dashicons dashicons-yes-alt"></span> ' . __('GitHub token is configured', 'smart-image-canvas') . '</p>';
-        } else {
-            echo '<p class="description" style="color: #d63638; font-weight: 500;"><span class="dashicons dashicons-warning"></span> ' . __('No GitHub token set - automatic updates disabled', 'smart-image-canvas') . '</p>';
-        }
-        
-        // Add JavaScript for token management
-        ?>
-        <script>
-        jQuery(document).ready(function($) {
-            // Handle clear token button
-            $('.sic-clear-token').on('click', function() {
-                var field = $(this).data('field');
-                var confirmed = confirm('<?php echo esc_js(__('Are you sure you want to clear the GitHub token? This will disable automatic updates.', 'smart-image-canvas')); ?>');
-                
-                if (confirmed) {
-                    // Clear the hidden token value
-                    $('.sic-token-hidden').val('');
-                    
-                    // Replace the interface with normal input
-                    $('.sic-github-token-wrapper').html(
-                        '<input type="password" id="SIC_' + field + '" name="SIC_settings[' + field + ']" value="" placeholder="<?php echo esc_js(__('Enter your GitHub fine-grained token...', 'smart-image-canvas')); ?>" class="regular-text wp-afi-field" />'
-                    );
-                    
-                    // Update status message
-                    $('.sic-github-token-wrapper').next('.description').next('.description').html('<span class="dashicons dashicons-warning"></span> <?php echo esc_js(__('Token cleared - remember to save settings', 'smart-image-canvas')); ?>').css('color', '#d63638');
-                }
-            });
-            
-            // Handle edit token button
-            $('.sic-edit-token').on('click', function() {
-                var field = $(this).data('field');
-                var isEditing = $(this).hasClass('sic-cancel-edit');
-                
-                if (isEditing) {
-                    // Cancel editing
-                    $('.sic-token-display').show();
-                    $('.sic-token-edit').hide();
-                    $(this).text('<?php echo esc_js(__('Edit Token', 'smart-image-canvas')); ?>').removeClass('sic-cancel-edit').addClass('sic-edit-token');
-                } else {
-                    // Start editing
-                    $('.sic-token-display').hide();
-                    $('.sic-token-edit').show().focus();
-                    $(this).text('<?php echo esc_js(__('Cancel Edit', 'smart-image-canvas')); ?>').removeClass('sic-edit-token').addClass('sic-cancel-edit');
-                }
-            });
-            
-            // Update hidden field when editing
-            $('.sic-token-edit').on('input', function() {
-                var newValue = $(this).val();
-                $('.sic-token-hidden').val(newValue);
-            });
-        });
-        </script>
-        <?php
-    }
-    
     public function number_field($args) {
         $settings = Smart_Image_Canvas::get_settings();
         $field = $args['field'];
@@ -1062,48 +943,6 @@ class SIC_Admin_Settings {
         } else {
             $sanitized['category_colors'] = array();
         }
-        
-        // GitHub token field with enhanced validation
-        $github_token = isset($input['github_token']) ? sanitize_text_field($input['github_token']) : '';
-        
-        // Validate GitHub token format if provided
-        if (!empty($github_token)) {
-            $is_valid_token = false;
-            
-            // Check for fine-grained personal access tokens (new format)
-            if (preg_match('/^github_pat_[a-zA-Z0-9_]{82}$/', $github_token)) {
-                $is_valid_token = true;
-                $token_type = 'fine-grained';
-            }
-            // Check for classic personal access tokens (legacy format)
-            elseif (preg_match('/^ghp_[a-zA-Z0-9]{36}$/', $github_token)) {
-                $is_valid_token = true;
-                $token_type = 'classic';
-            }
-            
-            if (!$is_valid_token) {
-                add_settings_error('SIC_settings', 'github_token_invalid', 
-                    __('Invalid GitHub token format. Please use a valid personal access token (classic format: ghp_... or fine-grained format: github_pat_...).', 'smart-image-canvas'));
-                $github_token = $defaults['github_token']; // Revert to default (empty)
-                $logger->warning('Invalid GitHub token format rejected', array(
-                    'token_length' => strlen($github_token),
-                    'token_prefix' => substr($github_token, 0, 10) . '...'
-                ));
-            } else {
-                $logger->info('Valid GitHub token accepted', array(
-                    'token_type' => $token_type,
-                    'token_length' => strlen($github_token)
-                ));
-            }
-        }
-        
-        $sanitized['github_token'] = $github_token;
-        $logger->info('GitHub token processed', array(
-            'has_token' => !empty($github_token),
-            'token_length' => strlen($github_token),
-            'input_has_token' => isset($input['github_token']),
-            'is_valid_format' => !empty($github_token) ? $is_valid_token : true
-        ));
         
         $logger->info('Settings sanitization completed', array('sanitized_keys' => array_keys($sanitized)));
         
@@ -4705,8 +4544,6 @@ class SIC_Admin_Settings {
      */
     private function render_updates_tab() {
         $current_version = SIC_VERSION;
-        $settings = Smart_Image_Canvas::get_settings();
-        $has_github_token = !empty($settings['github_token']);
         ?>
         <div class="wp-afi-updates-container">
             <div class="wp-afi-updates-header">
@@ -4722,48 +4559,10 @@ class SIC_Admin_Settings {
                 </div>
             </div>
             
-            <?php if (!$has_github_token): ?>
-                <div class="notice notice-warning">
-                    <p>
-                        <?php _e('GitHub token is required for automatic updates.', 'smart-image-canvas'); ?>
-                        <a href="?page=smart-image-canvas&tab=settings"><?php _e('Configure GitHub token in Settings', 'smart-image-canvas'); ?></a>
-                    </p>
-                </div>
-            <?php else: ?>
-                <div class="wp-afi-token-status">
-                    <h3><?php _e('GitHub Token Status', 'smart-image-canvas'); ?></h3>
-                    <div class="wp-afi-token-info">
-                        <?php
-                        $token = $settings['github_token'];
-                        $token_length = strlen($token);
-                        $token_prefix = substr($token, 0, 10) . '...';
-                        
-                        // Check token format
-                        $is_fine_grained = preg_match('/^github_pat_[a-zA-Z0-9_]{82}$/', $token);
-                        $is_classic = preg_match('/^ghp_[a-zA-Z0-9]{36}$/', $token);
-                        $token_type = $is_fine_grained ? 'Fine-grained' : ($is_classic ? 'Classic' : 'Unknown format');
-                        ?>
-                        <p><strong><?php _e('Token:', 'smart-image-canvas'); ?></strong> <?php echo esc_html($token_prefix); ?></p>
-                        <p><strong><?php _e('Type:', 'smart-image-canvas'); ?></strong> <?php echo esc_html($token_type); ?></p>
-                        <p><strong><?php _e('Length:', 'smart-image-canvas'); ?></strong> <?php echo esc_html($token_length); ?> characters</p>
-                        <?php if (!$is_fine_grained && !$is_classic): ?>
-                            <div class="notice notice-error inline">
-                                <p><?php _e('Warning: Token format appears invalid. Expected formats: ghp_... (classic) or github_pat_... (fine-grained)', 'smart-image-canvas'); ?></p>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-            
             <div class="wp-afi-update-actions">
-                <button type="button" id="sic-check-update" class="button button-primary" <?php echo !$has_github_token ? 'disabled' : ''; ?>>
+                <button type="button" id="sic-check-update" class="button button-primary">
                     <?php _e('Check for Updates', 'smart-image-canvas'); ?>
                 </button>
-                <?php if ($has_github_token): ?>
-                <button type="button" id="sic-test-token" class="button" style="margin-left: 10px;">
-                    <?php _e('Test Token', 'smart-image-canvas'); ?>
-                </button>
-                <?php endif; ?>
                 <div id="sic-update-spinner" class="spinner" style="display: none;"></div>
             </div>
             
@@ -4774,8 +4573,7 @@ class SIC_Admin_Settings {
             <div class="wp-afi-update-info">
                 <h3><?php _e('Update Information', 'smart-image-canvas'); ?></h3>
                 <ul>
-                    <li><?php _e('Updates are fetched directly from the GitHub repository', 'smart-image-canvas'); ?></li>
-                    <li><?php _e('A valid GitHub personal access token is required', 'smart-image-canvas'); ?></li>
+                    <li><?php _e('Updates are fetched directly from the public GitHub repository', 'smart-image-canvas'); ?></li>
                     <li><?php _e('Backup your site before performing updates', 'smart-image-canvas'); ?></li>
                     <li><?php _e('Updates will preserve your current settings', 'smart-image-canvas'); ?></li>
                 </ul>
@@ -4920,40 +4718,6 @@ class SIC_Admin_Settings {
                 });
             });
             
-            // Handle test token button
-            $('#sic-test-token').on('click', function() {
-                var button = $(this);
-                var spinner = $('#sic-update-spinner');
-                var results = $('#sic-update-results');
-                
-                button.prop('disabled', true);
-                spinner.show();
-                results.hide();
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'SIC_test_token',
-                        nonce: '<?php echo wp_create_nonce('SIC_admin_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            results.html('<div class="wp-afi-no-update"><h3><?php _e('Token Test Result', 'smart-image-canvas'); ?></h3>' + response.data.message + '</div>').show();
-                        } else {
-                            results.html('<div class="wp-afi-update-error"><p><?php _e('Token test failed:', 'smart-image-canvas'); ?> ' + response.data + '</p></div>').show();
-                        }
-                    },
-                    error: function() {
-                        results.html('<div class="wp-afi-update-error"><p><?php _e('Failed to test token. Please try again.', 'smart-image-canvas'); ?></p></div>').show();
-                    },
-                    complete: function() {
-                        button.prop('disabled', false);
-                        spinner.hide();
-                    }
-                });
-            });
-            
             // Handle update button clicks (delegated event)
             $(document).on('click', '#sic-perform-update', function() {
                 var button = $(this);
@@ -5004,29 +4768,12 @@ class SIC_Admin_Settings {
         }
         
         $current_version = SIC_VERSION;
-        $settings = Smart_Image_Canvas::get_settings();
-        $github_token = $settings['github_token'];
         
-        if (empty($github_token)) {
-            wp_send_json_error(__('GitHub token is required for update checks', 'smart-image-canvas'));
-            return;
-        }
-        
-        // First, try to test if the repository is accessible
-        $test_result = $this->test_github_repository_access($github_token);
-        if (!$test_result['success']) {
-            wp_send_json_error($test_result['message']);
-            return;
-        }
-        
-        // Get remote version from GitHub
+        // Get remote version from GitHub (public repository, no auth needed)
         $api_url = 'https://api.github.com/repos/truebite/smart-image-canvas/releases/latest';
         $request = wp_remote_get($api_url, array(
             'headers' => array(
-                'Authorization' => 'Bearer ' . $github_token,
-                'User-Agent' => 'WordPress-Plugin-Updater',
-                'X-GitHub-Api-Version' => '2022-11-28',
-                'Accept' => 'application/vnd.github+json'
+                'User-Agent' => 'WordPress-Plugin-Updater'
             ),
             'timeout' => 30
         ));
@@ -5040,19 +4787,9 @@ class SIC_Admin_Settings {
         $response_body = wp_remote_retrieve_body($request);
         
         if ($response_code !== 200) {
-            // Try to get more detailed error information
             $error_data = json_decode($response_body, true);
             $error_message = isset($error_data['message']) ? $error_data['message'] : 'Unknown error';
-            
-            if ($response_code === 404) {
-                wp_send_json_error(__('Repository not found or token lacks access. Please check your GitHub token permissions.', 'smart-image-canvas'));
-            } elseif ($response_code === 401) {
-                wp_send_json_error(__('GitHub token is invalid or expired. Please update your token.', 'smart-image-canvas'));
-            } elseif ($response_code === 403) {
-                wp_send_json_error(__('GitHub token lacks required permissions. Please ensure token has "Contents" read access.', 'smart-image-canvas'));
-            } else {
-                wp_send_json_error(sprintf(__('GitHub API returned error %d: %s', 'smart-image-canvas'), $response_code, $error_message));
-            }
+            wp_send_json_error(sprintf(__('GitHub API returned error %d: %s', 'smart-image-canvas'), $response_code, $error_message));
             return;
         }
         
@@ -5088,71 +4825,6 @@ class SIC_Admin_Settings {
             return;
         }
         
-        $settings = Smart_Image_Canvas::get_settings();
-        $github_token = $settings['github_token'];
-        
-        if (empty($github_token)) {
-            wp_send_json_error(__('GitHub token is required for updates', 'smart-image-canvas'));
-            return;
-        }
-        
-        // Get release information to find the download URL
-        $api_url = "https://api.github.com/repos/truebite/smart-image-canvas/releases/tags/v{$version}";
-        $request = wp_remote_get($api_url, array(
-            'headers' => array(
-                'Authorization' => 'Bearer ' . $github_token,
-                'User-Agent' => 'WordPress-Plugin-Updater',
-                'X-GitHub-Api-Version' => '2022-11-28',
-                'Accept' => 'application/vnd.github+json'
-            ),
-            'timeout' => 30
-        ));
-        
-        if (is_wp_error($request)) {
-            wp_send_json_error(__('Failed to connect to GitHub API: ', 'smart-image-canvas') . $request->get_error_message());
-            return;
-        }
-        
-        $response_code = wp_remote_retrieve_response_code($request);
-        if ($response_code !== 200) {
-            wp_send_json_error(__('GitHub API returned error: ', 'smart-image-canvas') . $response_code);
-            return;
-        }
-        
-        $data = json_decode(wp_remote_retrieve_body($request), true);
-        if (!$data) {
-            wp_send_json_error(__('Invalid response from GitHub API', 'smart-image-canvas'));
-            return;
-        }
-        
-        // Look for the plugin ZIP asset
-        $download_url = null;
-        $is_asset_download = false;
-        
-        // For now, prefer zipball over assets for better reliability
-        $download_url = $data['zipball_url'];
-        $is_asset_download = false;
-        
-        // Alternative: Look for assets (commented out for testing)
-        /*
-        if (isset($data['assets']) && is_array($data['assets'])) {
-            foreach ($data['assets'] as $asset) {
-                if (strpos($asset['name'], 'smart-image-canvas-v') === 0 && pathinfo($asset['name'], PATHINFO_EXTENSION) === 'zip') {
-                    // For private repos, we need to use the API URL with authentication, not browser_download_url
-                    $download_url = $asset['url']; // API URL requires auth
-                    $is_asset_download = true;
-                    break;
-                }
-            }
-        }
-        
-        // Fallback to zipball if no asset found
-        if (!$download_url) {
-            $download_url = $data['zipball_url'];
-            $is_asset_download = false;
-        }
-        */
-        
         // Include WordPress update functions
         if (!function_exists('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -5161,60 +4833,16 @@ class SIC_Admin_Settings {
             require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         }
         
-        // Create a custom upgrader to handle GitHub downloads
+        // For public repositories, we can use direct GitHub release downloads
         $plugin_slug = 'smart-image-canvas/smart-image-canvas.php';
-        
-        // First, try to download the file manually with proper authentication
-        $headers = array(
-            'Authorization' => 'Bearer ' . $github_token,
-            'User-Agent' => 'WordPress-Plugin-Updater'
-        );
-        
-        // For zipball downloads, use standard JSON accept header
-        if ($is_asset_download) {
-            $headers['Accept'] = 'application/octet-stream';
-            $headers['X-GitHub-Api-Version'] = '2022-11-28';
-        } else {
-            $headers['Accept'] = 'application/vnd.github.v3+json';
-        }
-        
-        $args = array(
-            'headers' => $headers,
-            'timeout' => 300
-        );
-        
-        // Download the file
-        $temp_file = download_url($download_url, 300, false, $args);
-        
-        if (is_wp_error($temp_file)) {
-            wp_send_json_error(__('Failed to download update: ', 'smart-image-canvas') . $temp_file->get_error_message());
-            return;
-        }
-        
-        // Verify the file was downloaded and is a valid ZIP
-        if (!file_exists($temp_file) || filesize($temp_file) == 0) {
-            wp_send_json_error(__('Downloaded file is empty or invalid', 'smart-image-canvas'));
-            return;
-        }
+        $download_url = "https://github.com/truebite/smart-image-canvas/archive/refs/tags/v{$version}.zip";
         
         // Set up the upgrader
         $upgrader = new Plugin_Upgrader(new WP_Ajax_Upgrader_Skin());
         
-        // Remove the filter since we've already downloaded the file
-        // The upgrader will use the local temp file
-        $local_package = $temp_file;
-        
-        // Create mock plugin data for the upgrader
-        $plugin_data = array(
-            'slug' => 'smart-image-canvas',
-            'plugin' => $plugin_slug,
-            'new_version' => $version,
-            'package' => $local_package // Use the local downloaded file
-        );
-        
-        // Perform the update using the local file
+        // Perform the update
         $result = $upgrader->upgrade($plugin_slug, array(
-            'package' => $local_package,
+            'package' => $download_url,
             'destination' => WP_PLUGIN_DIR,
             'clear_destination' => true,
             'clear_working' => true,
@@ -5224,11 +4852,6 @@ class SIC_Admin_Settings {
                 'action' => 'update',
             )
         ));
-        
-        // Clean up the temporary file
-        if (file_exists($temp_file)) {
-            unlink($temp_file);
-        }
         
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
@@ -5241,129 +4864,6 @@ class SIC_Admin_Settings {
         }
         
         wp_send_json_success(__('Plugin updated successfully!', 'smart-image-canvas'));
-    }
-    
-    /**
-     * Handle test token AJAX request
-     */
-    public function handle_test_token_ajax() {
-        check_ajax_referer('SIC_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Insufficient permissions', 'smart-image-canvas'));
-            return;
-        }
-        
-        $settings = Smart_Image_Canvas::get_settings();
-        $github_token = $settings['github_token'];
-        
-        if (empty($github_token)) {
-            wp_send_json_error(__('GitHub token is required for testing', 'smart-image-canvas'));
-            return;
-        }
-        
-        $logger = SIC_Debug_Logger::get_instance();
-        $logger->info('Starting GitHub token test', array(
-            'token_length' => strlen($github_token),
-            'token_prefix' => substr($github_token, 0, 10) . '...'
-        ));
-        
-        // Test 1: Basic GitHub API authentication test
-        $auth_url = 'https://api.github.com/user';
-        $auth_request = wp_remote_get($auth_url, array(
-            'headers' => array(
-                'Authorization' => 'Bearer ' . $github_token,
-                'User-Agent' => 'WordPress-Plugin-Updater',
-                'Accept' => 'application/vnd.github+json'
-            ),
-            'timeout' => 15
-        ));
-        
-        $test_results = array();
-        
-        if (is_wp_error($auth_request)) {
-            $test_results[] = '❌ Failed to connect to GitHub API: ' . $auth_request->get_error_message();
-        } else {
-            $auth_code = wp_remote_retrieve_response_code($auth_request);
-            $auth_body = wp_remote_retrieve_body($auth_request);
-            
-            if ($auth_code === 200) {
-                $user_data = json_decode($auth_body, true);
-                $username = isset($user_data['login']) ? $user_data['login'] : 'Unknown';
-                $test_results[] = '✅ Token authentication successful for user: ' . $username;
-            } else {
-                $test_results[] = '❌ Token authentication failed (HTTP ' . $auth_code . ')';
-            }
-        }
-        
-        // Test 2: Repository access test
-        $repo_url = 'https://api.github.com/repos/truebite/smart-image-canvas';
-        $repo_request = wp_remote_get($repo_url, array(
-            'headers' => array(
-                'Authorization' => 'Bearer ' . $github_token,
-                'User-Agent' => 'WordPress-Plugin-Updater',
-                'Accept' => 'application/vnd.github+json'
-            ),
-            'timeout' => 15
-        ));
-        
-        if (is_wp_error($repo_request)) {
-            $test_results[] = '❌ Failed to access repository: ' . $repo_request->get_error_message();
-        } else {
-            $repo_code = wp_remote_retrieve_response_code($repo_request);
-            $repo_body = wp_remote_retrieve_body($repo_request);
-            
-            if ($repo_code === 200) {
-                $repo_data = json_decode($repo_body, true);
-                $repo_name = isset($repo_data['full_name']) ? $repo_data['full_name'] : 'Unknown';
-                $repo_private = isset($repo_data['private']) ? ($repo_data['private'] ? 'Private' : 'Public') : 'Unknown';
-                $test_results[] = '✅ Repository access successful: ' . $repo_name . ' (' . $repo_private . ')';
-            } elseif ($repo_code === 404) {
-                $test_results[] = '❌ Repository not found or token lacks access (HTTP 404)';
-            } elseif ($repo_code === 403) {
-                $test_results[] = '❌ Token lacks required permissions for repository (HTTP 403)';
-            } else {
-                $test_results[] = '❌ Repository access failed (HTTP ' . $repo_code . ')';
-            }
-        }
-        
-        // Test 3: Releases access test
-        $releases_url = 'https://api.github.com/repos/truebite/smart-image-canvas/releases/latest';
-        $releases_request = wp_remote_get($releases_url, array(
-            'headers' => array(
-                'Authorization' => 'Bearer ' . $github_token,
-                'User-Agent' => 'WordPress-Plugin-Updater',
-                'Accept' => 'application/vnd.github+json'
-            ),
-            'timeout' => 15
-        ));
-        
-        if (is_wp_error($releases_request)) {
-            $test_results[] = '❌ Failed to access releases: ' . $releases_request->get_error_message();
-        } else {
-            $releases_code = wp_remote_retrieve_response_code($releases_request);
-            $releases_body = wp_remote_retrieve_body($releases_request);
-            
-            if ($releases_code === 200) {
-                $release_data = json_decode($releases_body, true);
-                $tag_name = isset($release_data['tag_name']) ? $release_data['tag_name'] : 'Unknown';
-                $test_results[] = '✅ Releases access successful. Latest: ' . $tag_name;
-            } elseif ($releases_code === 404) {
-                $test_results[] = '⚠️ No releases found or access denied (HTTP 404)';
-            } else {
-                $test_results[] = '❌ Releases access failed (HTTP ' . $releases_code . ')';
-            }
-        }
-        
-        $logger->info('GitHub token test completed', array('results' => $test_results));
-        
-        $message = '<ul>';
-        foreach ($test_results as $result) {
-            $message .= '<li>' . esc_html($result) . '</li>';
-        }
-        $message .= '</ul>';
-        
-        wp_send_json_success(array('message' => $message));
     }
     
     /**
@@ -5400,84 +4900,6 @@ class SIC_Admin_Settings {
         }
         
         return $html;
-    }
-    
-    /**
-     * Test GitHub repository access
-     */
-    private function test_github_repository_access($github_token) {
-        // First test: Check if repository exists and is accessible
-        $repo_url = 'https://api.github.com/repos/truebite/smart-image-canvas';
-        
-        // Log the request for debugging
-        $logger = SIC_Debug_Logger::get_instance();
-        $logger->info('Testing GitHub repository access', array(
-            'url' => $repo_url,
-            'token_length' => strlen($github_token),
-            'token_prefix' => substr($github_token, 0, 10) . '...'
-        ));
-        
-        $request = wp_remote_get($repo_url, array(
-            'headers' => array(
-                'Authorization' => 'Bearer ' . $github_token,
-                'User-Agent' => 'WordPress-Plugin-Updater',
-                'Accept' => 'application/vnd.github+json'
-            ),
-            'timeout' => 15
-        ));
-        
-        if (is_wp_error($request)) {
-            $error_msg = $request->get_error_message();
-            $logger->error('GitHub API connection failed', array('error' => $error_msg));
-            return array(
-                'success' => false,
-                'message' => __('Failed to connect to GitHub: ', 'smart-image-canvas') . $error_msg
-            );
-        }
-        
-        $response_code = wp_remote_retrieve_response_code($request);
-        $response_body = wp_remote_retrieve_body($request);
-        
-        $logger->info('GitHub API response received', array(
-            'status_code' => $response_code,
-            'response_length' => strlen($response_body),
-            'response_preview' => substr($response_body, 0, 200) . '...'
-        ));
-        
-        if ($response_code === 404) {
-            return array(
-                'success' => false,
-                'message' => __('Repository "truebite/smart-image-canvas" not found. Please check if the repository exists and your token has access to it.', 'smart-image-canvas')
-            );
-        } elseif ($response_code === 401) {
-            return array(
-                'success' => false,
-                'message' => __('GitHub token is invalid or expired. Please check your token.', 'smart-image-canvas')
-            );
-        } elseif ($response_code === 403) {
-            return array(
-                'success' => false,
-                'message' => __('GitHub token lacks required permissions. Please ensure your token has "Contents" read access.', 'smart-image-canvas')
-            );
-        } elseif ($response_code !== 200) {
-            $error_data = json_decode($response_body, true);
-            $error_message = isset($error_data['message']) ? $error_data['message'] : 'Unknown error';
-            return array(
-                'success' => false,
-                'message' => sprintf(__('GitHub API error %d: %s', 'smart-image-canvas'), $response_code, $error_message)
-            );
-        }
-        
-        // Parse repository data to verify it's the correct repo
-        $repo_data = json_decode($response_body, true);
-        if (!isset($repo_data['name']) || $repo_data['name'] !== 'smart-image-canvas') {
-            return array(
-                'success' => false,
-                'message' => __('Repository data is invalid or corrupted.', 'smart-image-canvas')
-            );
-        }
-        
-        return array('success' => true);
     }
 }
 
