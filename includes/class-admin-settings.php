@@ -49,6 +49,8 @@ class SIC_Admin_Settings {
         add_action('admin_init', array($this, 'register_settings'));
         add_action('wp_ajax_SIC_preview', array($this, 'handle_preview_ajax'));
         add_action('wp_ajax_SIC_self_test', array($this, 'handle_self_test_ajax'));
+        add_action('wp_ajax_SIC_check_update', array($this, 'handle_check_update_ajax'));
+        add_action('wp_ajax_SIC_perform_update', array($this, 'handle_perform_update_ajax'));
         add_action('admin_notices', array($this, 'admin_notices'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
     }
@@ -387,6 +389,9 @@ class SIC_Admin_Settings {
                 <a href="?page=smart-image-canvas&tab=settings" class="nav-tab <?php echo $active_tab === 'settings' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Settings', 'smart-image-canvas'); ?>
                 </a>
+                <a href="?page=smart-image-canvas&tab=updates" class="nav-tab <?php echo $active_tab === 'updates' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Updates', 'smart-image-canvas'); ?>
+                </a>
                 <a href="?page=smart-image-canvas&tab=debug" class="nav-tab <?php echo $active_tab === 'debug' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Debug & Troubleshooting', 'smart-image-canvas'); ?>
                 </a>
@@ -482,6 +487,8 @@ class SIC_Admin_Settings {
                     }
                 });
                 </script>
+            <?php elseif ($active_tab === 'updates'): ?>
+                <?php $this->render_updates_tab(); ?>
             <?php elseif ($active_tab === 'debug' || $active_tab === 'self-test'): ?>
                 <?php $this->render_debug_tab(); ?>
             <?php elseif ($active_tab === 'logs'): ?>
@@ -4686,6 +4693,408 @@ class SIC_Admin_Settings {
                 $html .= '</div>';
             }
             
+            $html .= '</div>';
+        }
+        
+        return $html;
+    }
+    
+    /**
+     * Render updates tab
+     */
+    private function render_updates_tab() {
+        $current_version = SIC_VERSION;
+        $settings = Smart_Image_Canvas::get_settings();
+        $has_github_token = !empty($settings['github_token']);
+        ?>
+        <div class="wp-afi-updates-container">
+            <div class="wp-afi-updates-header">
+                <h2><?php _e('Plugin Updates', 'smart-image-canvas'); ?></h2>
+                <p><?php _e('Manage and check for plugin updates from the GitHub repository.', 'smart-image-canvas'); ?></p>
+            </div>
+            
+            <div class="wp-afi-current-version">
+                <h3><?php _e('Current Version', 'smart-image-canvas'); ?></h3>
+                <div class="wp-afi-version-info">
+                    <span class="wp-afi-version-number"><?php echo esc_html($current_version); ?></span>
+                    <span class="wp-afi-version-label"><?php _e('Installed', 'smart-image-canvas'); ?></span>
+                </div>
+            </div>
+            
+            <?php if (!$has_github_token): ?>
+                <div class="notice notice-warning">
+                    <p>
+                        <?php _e('GitHub token is required for automatic updates.', 'smart-image-canvas'); ?>
+                        <a href="?page=smart-image-canvas&tab=settings"><?php _e('Configure GitHub token in Settings', 'smart-image-canvas'); ?></a>
+                    </p>
+                </div>
+            <?php endif; ?>
+            
+            <div class="wp-afi-update-actions">
+                <button type="button" id="sic-check-update" class="button button-primary" <?php echo !$has_github_token ? 'disabled' : ''; ?>>
+                    <?php _e('Check for Updates', 'smart-image-canvas'); ?>
+                </button>
+                <div id="sic-update-spinner" class="spinner" style="display: none;"></div>
+            </div>
+            
+            <div id="sic-update-results" class="wp-afi-update-results" style="display: none;">
+                <!-- Update results will be displayed here -->
+            </div>
+            
+            <div class="wp-afi-update-info">
+                <h3><?php _e('Update Information', 'smart-image-canvas'); ?></h3>
+                <ul>
+                    <li><?php _e('Updates are fetched directly from the GitHub repository', 'smart-image-canvas'); ?></li>
+                    <li><?php _e('A valid GitHub personal access token is required', 'smart-image-canvas'); ?></li>
+                    <li><?php _e('Backup your site before performing updates', 'smart-image-canvas'); ?></li>
+                    <li><?php _e('Updates will preserve your current settings', 'smart-image-canvas'); ?></li>
+                </ul>
+            </div>
+        </div>
+        
+        <style>
+        .wp-afi-updates-container {
+            max-width: 800px;
+        }
+        
+        .wp-afi-updates-header {
+            margin-bottom: 30px;
+        }
+        
+        .wp-afi-current-version {
+            background: #fff;
+            border: 1px solid #ccd0d4;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .wp-afi-version-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .wp-afi-version-number {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #2271b1;
+        }
+        
+        .wp-afi-version-label {
+            background: #dcdcde;
+            color: #2c3338;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+        }
+        
+        .wp-afi-update-actions {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .wp-afi-update-results {
+            background: #fff;
+            border: 1px solid #ccd0d4;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .wp-afi-update-available {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        
+        .wp-afi-no-update {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .wp-afi-update-error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .wp-afi-update-info ul {
+            list-style-type: disc;
+            margin-left: 20px;
+        }
+        
+        .wp-afi-update-details {
+            margin-top: 15px;
+        }
+        
+        .wp-afi-changelog {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        </style>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            $('#sic-check-update').on('click', function() {
+                var button = $(this);
+                var spinner = $('#sic-update-spinner');
+                var results = $('#sic-update-results');
+                
+                button.prop('disabled', true);
+                spinner.show();
+                results.hide();
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'SIC_check_update',
+                        nonce: '<?php echo wp_create_nonce('SIC_admin_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            results.html(response.data.html).show();
+                        } else {
+                            results.html('<div class="wp-afi-update-error"><p><?php _e('Error checking for updates:', 'smart-image-canvas'); ?> ' + response.data + '</p></div>').show();
+                        }
+                    },
+                    error: function() {
+                        results.html('<div class="wp-afi-update-error"><p><?php _e('Failed to check for updates. Please try again.', 'smart-image-canvas'); ?></p></div>').show();
+                    },
+                    complete: function() {
+                        button.prop('disabled', false);
+                        spinner.hide();
+                    }
+                });
+            });
+            
+            // Handle update button clicks (delegated event)
+            $(document).on('click', '#sic-perform-update', function() {
+                var button = $(this);
+                var version = button.data('version');
+                
+                if (!confirm('<?php _e('Are you sure you want to update the plugin? Please make sure you have a backup of your site.', 'smart-image-canvas'); ?>')) {
+                    return;
+                }
+                
+                button.prop('disabled', true).text('<?php _e('Updating...', 'smart-image-canvas'); ?>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'SIC_perform_update',
+                        version: version,
+                        nonce: '<?php echo wp_create_nonce('SIC_admin_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload(); // Reload page to reflect new version
+                        } else {
+                            alert('<?php _e('Update failed:', 'smart-image-canvas'); ?> ' + response.data);
+                            button.prop('disabled', false).text('<?php _e('Install Update', 'smart-image-canvas'); ?>');
+                        }
+                    },
+                    error: function() {
+                        alert('<?php _e('Update failed. Please try again.', 'smart-image-canvas'); ?>');
+                        button.prop('disabled', false).text('<?php _e('Install Update', 'smart-image-canvas'); ?>');
+                    }
+                });
+            });
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * Handle check update AJAX request
+     */
+    public function handle_check_update_ajax() {
+        check_ajax_referer('SIC_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Insufficient permissions', 'smart-image-canvas'));
+            return;
+        }
+        
+        $current_version = SIC_VERSION;
+        $settings = Smart_Image_Canvas::get_settings();
+        $github_token = $settings['github_token'];
+        
+        if (empty($github_token)) {
+            wp_send_json_error(__('GitHub token is required for update checks', 'smart-image-canvas'));
+            return;
+        }
+        
+        // Get remote version from GitHub
+        $api_url = 'https://api.github.com/repos/truebite/smart-image-canvas/releases/latest';
+        $request = wp_remote_get($api_url, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $github_token,
+                'User-Agent' => 'WordPress-Plugin-Updater',
+                'X-GitHub-Api-Version' => '2022-11-28'
+            ),
+            'timeout' => 30
+        ));
+        
+        if (is_wp_error($request)) {
+            wp_send_json_error(__('Failed to connect to GitHub API: ', 'smart-image-canvas') . $request->get_error_message());
+            return;
+        }
+        
+        $response_code = wp_remote_retrieve_response_code($request);
+        if ($response_code !== 200) {
+            wp_send_json_error(__('GitHub API returned error: ', 'smart-image-canvas') . $response_code);
+            return;
+        }
+        
+        $body = wp_remote_retrieve_body($request);
+        $data = json_decode($body, true);
+        
+        if (!isset($data['tag_name'])) {
+            wp_send_json_error(__('Invalid response from GitHub API', 'smart-image-canvas'));
+            return;
+        }
+        
+        $remote_version = ltrim($data['tag_name'], 'v');
+        $is_update_available = version_compare($current_version, $remote_version, '<');
+        
+        $html = $this->generate_update_check_html($current_version, $remote_version, $is_update_available, $data);
+        
+        wp_send_json_success(array('html' => $html));
+    }
+    
+    /**
+     * Handle perform update AJAX request
+     */
+    public function handle_perform_update_ajax() {
+        check_ajax_referer('SIC_admin_nonce', 'nonce');
+        
+        if (!current_user_can('update_plugins')) {
+            wp_send_json_error(__('Insufficient permissions', 'smart-image-canvas'));
+            return;
+        }
+        
+        $version = sanitize_text_field($_POST['version']);
+        if (empty($version)) {
+            wp_send_json_error(__('Version parameter is required', 'smart-image-canvas'));
+            return;
+        }
+        
+        $settings = Smart_Image_Canvas::get_settings();
+        $github_token = $settings['github_token'];
+        
+        if (empty($github_token)) {
+            wp_send_json_error(__('GitHub token is required for updates', 'smart-image-canvas'));
+            return;
+        }
+        
+        // Include WordPress update functions
+        if (!function_exists('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        if (!class_exists('Plugin_Upgrader')) {
+            require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        }
+        
+        // Create a custom upgrader to handle GitHub downloads
+        $plugin_slug = 'smart-image-canvas/smart-image-canvas.php';
+        $download_url = "https://api.github.com/repos/truebite/smart-image-canvas/zipball/v{$version}";
+        
+        // Set up the upgrader
+        $upgrader = new Plugin_Upgrader(new WP_Ajax_Upgrader_Skin());
+        
+        // Temporarily modify the package URL for this plugin
+        add_filter('upgrader_pre_download', function($reply, $package, $obj) use ($download_url, $github_token) {
+            if (strpos($package, 'github.com') !== false && strpos($package, 'smart-image-canvas') !== false) {
+                $args = array(
+                    'headers' => array(
+                        'Authorization' => 'Bearer ' . $github_token,
+                        'Accept' => 'application/vnd.github.v3+json',
+                        'X-GitHub-Api-Version' => '2022-11-28'
+                    ),
+                    'timeout' => 300
+                );
+                
+                return download_url($package, 300, false, $args);
+            }
+            return $reply;
+        }, 10, 3);
+        
+        // Create mock plugin data for the upgrader
+        $plugin_data = array(
+            'slug' => 'smart-image-canvas',
+            'plugin' => $plugin_slug,
+            'new_version' => $version,
+            'package' => $download_url
+        );
+        
+        // Perform the update
+        $result = $upgrader->upgrade($plugin_slug, array(
+            'package' => $download_url,
+            'destination' => WP_PLUGIN_DIR,
+            'clear_destination' => true,
+            'clear_working' => true,
+            'hook_extra' => array(
+                'plugin' => $plugin_slug,
+                'type' => 'plugin',
+                'action' => 'update',
+            )
+        ));
+        
+        if (is_wp_error($result)) {
+            wp_send_json_error($result->get_error_message());
+            return;
+        }
+        
+        if ($result === false) {
+            wp_send_json_error(__('Update failed for unknown reason', 'smart-image-canvas'));
+            return;
+        }
+        
+        wp_send_json_success(__('Plugin updated successfully!', 'smart-image-canvas'));
+    }
+    
+    /**
+     * Generate update check HTML
+     */
+    private function generate_update_check_html($current_version, $remote_version, $is_update_available, $release_data) {
+        $html = '';
+        
+        if ($is_update_available) {
+            $html .= '<div class="wp-afi-update-available">';
+            $html .= '<h3>' . __('Update Available!', 'smart-image-canvas') . '</h3>';
+            $html .= '<p>' . sprintf(__('A new version (%s) is available. You are currently running version %s.', 'smart-image-canvas'), 
+                esc_html($remote_version), esc_html($current_version)) . '</p>';
+            
+            if (isset($release_data['body']) && !empty($release_data['body'])) {
+                $html .= '<div class="wp-afi-update-details">';
+                $html .= '<h4>' . __('Release Notes:', 'smart-image-canvas') . '</h4>';
+                $html .= '<div class="wp-afi-changelog">' . esc_html($release_data['body']) . '</div>';
+                $html .= '</div>';
+            }
+            
+            $html .= '<p>';
+            $html .= '<button type="button" id="sic-perform-update" class="button button-primary" data-version="' . esc_attr($remote_version) . '">';
+            $html .= __('Install Update', 'smart-image-canvas');
+            $html .= '</button>';
+            $html .= '</p>';
+            $html .= '</div>';
+        } else {
+            $html .= '<div class="wp-afi-no-update">';
+            $html .= '<h3>' . __('You\'re up to date!', 'smart-image-canvas') . '</h3>';
+            $html .= '<p>' . sprintf(__('You are running the latest version (%s) of Smart Image Canvas.', 'smart-image-canvas'), 
+                esc_html($current_version)) . '</p>';
             $html .= '</div>';
         }
         
