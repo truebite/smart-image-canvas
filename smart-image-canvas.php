@@ -2,13 +2,18 @@
 /**
  * Plugin Name: Smart Image Canvas
  * Plugin URI: https://github.com/truebite/smart-image-canvas
- * Description: Automatically generate beautiful CSS-based featured images when no featured image is set. Features live preview, customizable styles, and responsive design.
- * Version: 1.0.9
- * Author: Your Name
+ * Description: Automatically generates beautiful featured images for posts using HTML5 Canvas with customizable templates, typography, and colors.
+ * Version: 1.2.0
+ * Author: TrueBite
+ * Author URI: https://truebite.eu
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: smart-image-canvas
  * Domain Path: /languages
+ * Requires at least: 5.0
+ * Tested up to: 6.4
+ * Requires PHP: 7.4
+ * Network: false
  *
  * @package Smart_Image_Canvas
  */
@@ -19,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('SIC_VERSION', '1.1.0');
+define('SIC_VERSION', '1.2.0');
 define('SIC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SIC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SIC_PLUGIN_BASENAME', plugin_basename(__FILE__));
