@@ -140,6 +140,11 @@ class SIC_Admin_Settings {
             display: flex;
             align-items: flex-start;
         }
+        
+        /* Custom aspect ratio field - initially hidden */
+        tr:has(#SIC_custom_aspect_ratio) {
+            display: none;
+        }
         ";
         
         wp_add_inline_style('admin-menu', $admin_css);
@@ -223,10 +228,23 @@ class SIC_Admin_Settings {
         add_settings_field(
             'aspect_ratio',
             __('Aspect Ratio', 'smart-image-canvas'),
-            array($this, 'select_field'),
+            array($this, 'aspect_ratio_field'),
             'smart-image-canvas',
             'SIC_general_section',
             array('field' => 'aspect_ratio', 'options' => SIC_Image_Generator::get_aspect_ratios())
+        );
+        
+        add_settings_field(
+            'custom_aspect_ratio',
+            __('Custom Aspect Ratio', 'smart-image-canvas'),
+            array($this, 'custom_aspect_ratio_field'),
+            'smart-image-canvas',
+            'SIC_general_section',
+            array(
+                'field' => 'custom_aspect_ratio', 
+                'description' => __('Enter custom ratio (e.g., 5:3, 7:4). Only visible when "Custom" is selected above.', 'smart-image-canvas'),
+                'placeholder' => '5:3'
+            )
         );
         
         add_settings_field(
@@ -768,6 +786,67 @@ class SIC_Admin_Settings {
         echo '</select>';
     }
     
+    public function aspect_ratio_field($args) {
+        $settings = Smart_Image_Canvas::get_settings();
+        $field = $args['field'];
+        $value = isset($settings[$field]) ? $settings[$field] : '';
+        $options = $args['options'] ?? array();
+        
+        echo sprintf('<select id="SIC_%s" name="SIC_settings[%s]" class="wp-afi-field wp-afi-aspect-ratio-select">', esc_attr($field), esc_attr($field));
+        
+        foreach ($options as $option_value => $option_label) {
+            echo sprintf(
+                '<option value="%s" %s>%s</option>',
+                esc_attr($option_value),
+                selected($value, $option_value, false),
+                esc_html($option_label)
+            );
+        }
+        
+        echo '</select>';
+        
+        // Add JavaScript to show/hide custom field
+        ?>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            function toggleCustomAspectRatio() {
+                var selectedValue = $('#SIC_aspect_ratio').val();
+                var customField = $('#SIC_custom_aspect_ratio').closest('tr');
+                
+                if (selectedValue === 'custom') {
+                    customField.show();
+                } else {
+                    customField.hide();
+                }
+            }
+            
+            // Initial state
+            toggleCustomAspectRatio();
+            
+            // On change
+            $('#SIC_aspect_ratio').on('change', toggleCustomAspectRatio);
+        });
+        </script>
+        <?php
+    }
+    
+    public function custom_aspect_ratio_field($args) {
+        $settings = Smart_Image_Canvas::get_settings();
+        $field = $args['field'];
+        $value = isset($settings[$field]) ? $settings[$field] : '';
+        
+        echo sprintf(
+            '<input type="text" id="SIC_%s" name="SIC_settings[%s]" value="%s" class="wp-afi-field" placeholder="16:9" />',
+            esc_attr($field),
+            esc_attr($field),
+            esc_attr($value)
+        );
+        
+        if (isset($args['description'])) {
+            echo '<p class="description">' . esc_html($args['description']) . '</p>';
+        }
+    }
+    
     public function textarea_field($args) {
         $settings = Smart_Image_Canvas::get_settings();
         $field = $args['field'];
@@ -902,6 +981,25 @@ class SIC_Admin_Settings {
                 $value = $defaults[$field];
             }
             $sanitized[$field] = $value ?: $defaults[$field];
+        }
+        
+        // Custom aspect ratio validation
+        if (isset($input['custom_aspect_ratio'])) {
+            $custom_ratio = sanitize_text_field($input['custom_aspect_ratio']);
+            if (!empty($custom_ratio)) {
+                // Validate format (width:height)
+                if (preg_match('/^\d+:\d+$/', $custom_ratio)) {
+                    $sanitized['custom_aspect_ratio'] = $custom_ratio;
+                } else {
+                    add_settings_error('SIC_settings', 'custom_aspect_ratio_invalid', 
+                        __('Custom aspect ratio must be in format "width:height" (e.g., 16:9, 5:3).', 'smart-image-canvas'));
+                    $sanitized['custom_aspect_ratio'] = isset($defaults['custom_aspect_ratio']) ? $defaults['custom_aspect_ratio'] : '';
+                }
+            } else {
+                $sanitized['custom_aspect_ratio'] = '';
+            }
+        } else {
+            $sanitized['custom_aspect_ratio'] = isset($defaults['custom_aspect_ratio']) ? $defaults['custom_aspect_ratio'] : '';
         }
         
         // Number fields with range validation

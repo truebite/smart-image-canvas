@@ -5,6 +5,19 @@ All notable changes to Smart Image Canvas will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2025-09-04
+
+### Added
+- **Custom Aspect Ratio Feature** - Added custom aspect ratio option with input field
+- Support for user-defined aspect ratios in format "width:height" (e.g., 5:3, 7:4)
+- Conditional display of custom aspect ratio field when "Custom" is selected
+- Validation for custom aspect ratio format with proper error messages
+
+### Enhanced
+- Aspect ratio dropdown now includes "Custom" option
+- Image generation now handles custom aspect ratios dynamically
+- Admin interface improvements with JavaScript-based field visibility
+
 ## [1.2.2] - 2025-09-04
 
 ### Fixed  

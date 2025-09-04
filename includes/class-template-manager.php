@@ -273,6 +273,12 @@ class SIC_Template_Manager {
         // Apply aspect ratio from settings if available
         if (!empty($settings['aspect_ratio'])) {
             $aspect_ratio = $settings['aspect_ratio'];
+            
+            // Handle custom aspect ratio
+            if ($aspect_ratio === 'custom' && !empty($settings['custom_aspect_ratio'])) {
+                $aspect_ratio = $settings['custom_aspect_ratio'];
+            }
+            
             $ratio_parts = explode(':', $aspect_ratio);
             
             if (count($ratio_parts) === 2) {
@@ -361,7 +367,8 @@ class SIC_Template_Manager {
             '21:9' => '21:9 (Ultra-wide)',
             '5:4' => '5:4 (Traditional)',
             '8:5' => '8:5 (Golden Ratio)',
-            '2:1' => '2:1 (Panoramic)'
+            '2:1' => '2:1 (Panoramic)',
+            'custom' => 'Custom (Enter your own ratio)'
         ));
     }
     
