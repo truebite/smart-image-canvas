@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2024-01-XX
+
+### Fixed
+- Fixed private repository asset downloads by using GitHub API endpoints with authentication
+- Corrected download mechanism for private GitHub repositories
+- Fixed "Not Found" errors when downloading from private repository releases
+- Enhanced authentication handling for both release assets and zipball downloads
+
+### Enhanced
+- Proper handling of GitHub API asset downloads with correct Accept headers
+- Improved private repository support for plugin updates
+- Better error handling for authenticated downloads
+
 ## [1.1.1] - 2024-01-XX
 
 ### Fixed

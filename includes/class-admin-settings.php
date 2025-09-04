@@ -5127,10 +5127,13 @@ class SIC_Admin_Settings {
         
         // Look for the plugin ZIP asset
         $download_url = null;
+        $is_asset_download = false;
         if (isset($data['assets']) && is_array($data['assets'])) {
             foreach ($data['assets'] as $asset) {
                 if (strpos($asset['name'], 'smart-image-canvas-v') === 0 && pathinfo($asset['name'], PATHINFO_EXTENSION) === 'zip') {
-                    $download_url = $asset['browser_download_url'];
+                    // For private repos, we need to use the API URL with authentication, not browser_download_url
+                    $download_url = $asset['url']; // API URL requires auth
+                    $is_asset_download = true;
                     break;
                 }
             }
@@ -5139,6 +5142,7 @@ class SIC_Admin_Settings {
         // Fallback to zipball if no asset found
         if (!$download_url) {
             $download_url = $data['zipball_url'];
+            $is_asset_download = false;
         }
         
         // Include WordPress update functions
@@ -5155,30 +5159,30 @@ class SIC_Admin_Settings {
         // Set up the upgrader
         $upgrader = new Plugin_Upgrader(new WP_Ajax_Upgrader_Skin());
         
-        // For release assets, we can download directly; for zipball, we need auth
-        if (strpos($download_url, 'releases/download/') !== false) {
-            // Direct download from release asset - no auth needed for public releases
-            $download_args = array(
-                'timeout' => 300
-            );
-        } else {
-            // Zipball download - requires authentication
-            add_filter('upgrader_pre_download', function($reply, $package, $obj) use ($github_token) {
-                if (strpos($package, 'github.com') !== false && strpos($package, 'smart-image-canvas') !== false) {
-                    $args = array(
-                        'headers' => array(
-                            'Authorization' => 'Bearer ' . $github_token,
-                            'Accept' => 'application/vnd.github.v3+json',
-                            'X-GitHub-Api-Version' => '2022-11-28'
-                        ),
-                        'timeout' => 300
-                    );
-                    
-                    return download_url($package, 300, false, $args);
+        // Both asset downloads and zipball downloads from private repos need authentication
+        add_filter('upgrader_pre_download', function($reply, $package, $obj) use ($github_token, $is_asset_download) {
+            if (strpos($package, 'github.com') !== false || strpos($package, 'api.github.com') !== false) {
+                $headers = array(
+                    'Authorization' => 'Bearer ' . $github_token,
+                    'X-GitHub-Api-Version' => '2022-11-28'
+                );
+                
+                // For asset downloads, we need specific accept header
+                if ($is_asset_download) {
+                    $headers['Accept'] = 'application/octet-stream';
+                } else {
+                    $headers['Accept'] = 'application/vnd.github.v3+json';
                 }
-                return $reply;
-            }, 10, 3);
-        }
+                
+                $args = array(
+                    'headers' => $headers,
+                    'timeout' => 300
+                );
+                
+                return download_url($package, 300, false, $args);
+            }
+            return $reply;
+        }, 10, 3);
         
         // Create mock plugin data for the upgrader
         $plugin_data = array(
