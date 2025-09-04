@@ -5,6 +5,15 @@ All notable changes to Smart Image Canvas will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2025-09-04
+
+### Fixed
+- **Update Mechanism** - Fixed "Download URL returned error 302" issue by properly handling GitHub redirects
+- Enhanced download mechanism to accept both 200 (direct) and 302 (redirect) response codes
+- Added custom redirect download handler for GitHub release archives
+- Improved error handling and timeout settings for plugin updates
+- Enhanced plugin updater with better compatibility metadata
+
 ## [1.2.3] - 2025-09-04
 
 ### Added

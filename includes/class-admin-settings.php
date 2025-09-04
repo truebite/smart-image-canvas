@@ -4949,20 +4949,25 @@ class SIC_Admin_Settings {
         $plugin_slug = plugin_basename(SIC_PLUGIN_DIR . 'smart-image-canvas.php');
         $download_url = "https://github.com/truebite/smart-image-canvas/archive/refs/tags/v{$version}.zip";
         
-        // Test download URL first
-        $response = wp_remote_head($download_url);
+        // Test download URL first - handle redirects properly
+        $response = wp_remote_head($download_url, array(
+            'timeout' => 30,
+            'redirection' => 5  // Allow up to 5 redirects
+        ));
+        
         if (is_wp_error($response)) {
             wp_send_json_error(__('Failed to connect to download server: ', 'smart-image-canvas') . $response->get_error_message());
             return;
         }
         
         $response_code = wp_remote_retrieve_response_code($response);
-        if ($response_code !== 200) {
+        // Accept 200 (direct) or 302 (redirect) as valid responses
+        if (!in_array($response_code, array(200, 302))) {
             wp_send_json_error(sprintf(__('Download URL returned error %d. Version %s may not exist.', 'smart-image-canvas'), $response_code, $version));
             return;
         }
         
-        // Use WordPress's built-in plugin updater with a different approach
+        // Use WordPress's built-in plugin updater with enhanced handling
         // Temporarily modify the plugin update transient to include our update
         $plugins_update_transient = get_site_transient('update_plugins');
         if (!$plugins_update_transient) {
@@ -4970,22 +4975,34 @@ class SIC_Admin_Settings {
             $plugins_update_transient->response = array();
         }
         
-        // Add our plugin to the update queue
+        // Add our plugin to the update queue with enhanced package handling
         $plugins_update_transient->response[$plugin_slug] = (object) array(
             'slug' => dirname($plugin_slug),
             'plugin' => $plugin_slug,
             'new_version' => $version,
             'url' => "https://github.com/truebite/smart-image-canvas",
-            'package' => $download_url
+            'package' => $download_url,
+            'tested' => get_bloginfo('version'),
+            'requires_php' => '7.4',
+            'compatibility' => new stdClass()
         );
         
         set_site_transient('update_plugins', $plugins_update_transient);
         
-        // Now use WordPress's standard update mechanism
+        // Now use WordPress's standard update mechanism with custom skin for better error handling
         include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         
-        $upgrader = new Plugin_Upgrader(new WP_Ajax_Upgrader_Skin());
+        // Custom upgrader skin to capture more detailed error information
+        $skin = new WP_Ajax_Upgrader_Skin();
+        $upgrader = new Plugin_Upgrader($skin);
+        
+        // Add filter to handle redirect downloads
+        add_filter('upgrader_pre_download', array($this, 'handle_redirect_download'), 10, 3);
+        
         $result = $upgrader->upgrade($plugin_slug);
+        
+        // Remove the filter
+        remove_filter('upgrader_pre_download', array($this, 'handle_redirect_download'), 10);
         
         // Clean up the transient
         delete_site_transient('update_plugins');
@@ -5001,6 +5018,54 @@ class SIC_Admin_Settings {
         }
         
         wp_send_json_success(__('Plugin updated successfully!', 'smart-image-canvas'));
+    }
+    
+    /**
+     * Handle redirect downloads for GitHub releases
+     */
+    public function handle_redirect_download($reply, $package, $upgrader) {
+        // Only handle if this is our GitHub download
+        if (strpos($package, 'github.com/truebite/smart-image-canvas') === false) {
+            return $reply;
+        }
+        
+        // Download the file with proper redirect handling
+        $response = wp_remote_get($package, array(
+            'timeout' => 300,
+            'redirection' => 10,
+            'headers' => array(
+                'Accept' => 'application/zip, application/octet-stream'
+            )
+        ));
+        
+        if (is_wp_error($response)) {
+            return $response;
+        }
+        
+        $response_code = wp_remote_retrieve_response_code($response);
+        if ($response_code !== 200) {
+            return new WP_Error('download_failed', sprintf('HTTP %d error downloading package', $response_code));
+        }
+        
+        $body = wp_remote_retrieve_body($response);
+        if (empty($body)) {
+            return new WP_Error('download_failed', 'Empty response body');
+        }
+        
+        // Create temporary file
+        $temp_file = wp_tempnam($package);
+        if (!$temp_file) {
+            return new WP_Error('download_failed', 'Could not create temporary file');
+        }
+        
+        // Write the downloaded content to temp file
+        $bytes_written = file_put_contents($temp_file, $body);
+        if ($bytes_written === false || $bytes_written !== strlen($body)) {
+            @unlink($temp_file);
+            return new WP_Error('download_failed', 'Could not write to temporary file');
+        }
+        
+        return $temp_file;
     }
     
     /**
